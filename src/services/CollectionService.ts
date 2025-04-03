@@ -14,7 +14,7 @@ export interface Collection {
   updated_at: string;
   settings?: any;
   permissions?: any;
-  iconColor?: string;
+  iconColor: string;
   fields?: any[];
   lastUpdated?: string;
 }
@@ -68,8 +68,8 @@ export async function fetchCollections(): Promise<Collection[]> {
     }
 
     return (collectionsData || []).map((collection) => {
-      const settings = collection.settings !== undefined ? collection.settings : {};
-      const permissions = collection.permissions !== undefined ? collection.permissions : [];
+      const settingsValue = collection?.settings !== undefined ? collection.settings : {};
+      const permissionsValue = collection?.permissions !== undefined ? collection.permissions : [];
       
       return {
         id: collection.id,
@@ -83,8 +83,8 @@ export async function fetchCollections(): Promise<Collection[]> {
         created_at: collection.created_at,
         updated_at: collection.updated_at,
         lastUpdated: collection.updated_at,
-        settings: settings,
-        permissions: permissions
+        settings: settingsValue,
+        permissions: permissionsValue
       };
     });
   } catch (error) {
@@ -129,8 +129,8 @@ export async function createCollection(params: CreateCollectionParams): Promise<
       throw new Error('Failed to create collection - no data returned');
     }
 
-    const settings = newCollection.settings !== undefined ? newCollection.settings : {};
-    const permissions = newCollection.permissions !== undefined ? newCollection.permissions : [];
+    const newCollectionSettings = newCollection?.settings !== undefined ? newCollection.settings : {};
+    const newCollectionPermissions = newCollection?.permissions !== undefined ? newCollection.permissions : [];
 
     return {
       id: newCollection.id,
@@ -144,8 +144,8 @@ export async function createCollection(params: CreateCollectionParams): Promise<
       created_at: newCollection.created_at,
       updated_at: newCollection.updated_at,
       lastUpdated: newCollection.updated_at,
-      settings: settings,
-      permissions: permissions
+      settings: newCollectionSettings,
+      permissions: newCollectionPermissions
     };
   } catch (error: any) {
     console.error('Error creating collection:', error);

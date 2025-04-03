@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
@@ -31,7 +32,7 @@ export default function CollectionPreview() {
       setFieldDefinitions(adaptFieldsForPreview(fields));
       // Initialize form data with default values
       const initialData = fields.reduce((acc, field) => {
-        acc[field.apiId] = field.defaultValue || '';
+        acc[field.api_id] = field.default_value || '';
         return acc;
       }, {});
       setFormData(initialData);
@@ -123,13 +124,13 @@ export default function CollectionPreview() {
           <DateCalendarField
             key={field.id}
             id={field.id}
-            label={field.label}
-            value={field.value || null}
+            label={field.name}
+            value={formData[field.apiId] || null}
             onChange={(date: Date) => {
+              handleInputChange(field.apiId, date);
               console.log("Date changed:", date);
             }}
-            required={field.required}
-            helpText={field.helpText} // Use helpText prop
+            required={field.required || false}
           />
         );
       default:
