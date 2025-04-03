@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Json } from '@/integrations/supabase/types';
@@ -15,7 +16,8 @@ export interface Collection {
   settings?: any;
   permissions?: any;
   iconColor: string;
-  fields?: any[];
+  fields?: number; // Changed from any[] to number to match the CollectionGrid.tsx interface
+  items?: number;  // Added to match the CollectionGrid.tsx interface
   lastUpdated?: string;
 }
 
@@ -68,8 +70,10 @@ export async function fetchCollections(): Promise<Collection[]> {
     }
 
     return (collectionsData || []).map((collection) => {
-      const settingsValue = collection?.settings !== undefined ? collection.settings : {};
-      const permissionsValue = collection?.permissions !== undefined ? collection.permissions : [];
+      // Handle settings and permissions safely
+      const collectionWithOptionalProps = collection as any; // Type assertion to access optional properties
+      const settingsValue = collectionWithOptionalProps.settings ?? {};
+      const permissionsValue = collectionWithOptionalProps.permissions ?? [];
       
       return {
         id: collection.id,
@@ -84,7 +88,9 @@ export async function fetchCollections(): Promise<Collection[]> {
         updated_at: collection.updated_at,
         lastUpdated: collection.updated_at,
         settings: settingsValue,
-        permissions: permissionsValue
+        permissions: permissionsValue,
+        fields: fieldCounts[collection.id] || 0,  // Use the field count as a number
+        items: contentCounts[collection.id] || 0  // Use the content count as a number
       };
     });
   } catch (error) {
@@ -129,8 +135,10 @@ export async function createCollection(params: CreateCollectionParams): Promise<
       throw new Error('Failed to create collection - no data returned');
     }
 
-    const newCollectionSettings = newCollection?.settings !== undefined ? newCollection.settings : {};
-    const newCollectionPermissions = newCollection?.permissions !== undefined ? newCollection.permissions : [];
+    // Handle settings and permissions safely
+    const collectionWithOptionalProps = newCollection as any; // Type assertion to access optional properties
+    const newCollectionSettings = collectionWithOptionalProps.settings ?? {};
+    const newCollectionPermissions = collectionWithOptionalProps.permissions ?? [];
 
     return {
       id: newCollection.id,
@@ -145,7 +153,9 @@ export async function createCollection(params: CreateCollectionParams): Promise<
       updated_at: newCollection.updated_at,
       lastUpdated: newCollection.updated_at,
       settings: newCollectionSettings,
-      permissions: newCollectionPermissions
+      permissions: newCollectionPermissions,
+      fields: 0, // New collection has no fields initially
+      items: 0   // New collection has no items initially
     };
   } catch (error: any) {
     console.error('Error creating collection:', error);
