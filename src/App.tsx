@@ -1,85 +1,55 @@
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { CMSProvider } from "./context/CMSContext";
-import { AppLayout } from "./components/layout/AppLayout";
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { ThemeProvider } from '@/components/theme-provider';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from '@/components/ui/toaster';
 
-// Pages
-import Dashboard from "./pages/Dashboard";
-import Collections from "./pages/Collections";
-import CollectionDetail from "./pages/CollectionDetail";
-import Users from "./pages/Users";
-import Settings from "./pages/Settings";
-import Activity from "./pages/Activity";
-import NotFound from "./pages/NotFound";
+import Dashboard from '@/pages/Dashboard';
+import Collections from '@/pages/Collections';
+import FieldConfiguration from '@/pages/FieldConfiguration';
+import CollectionPreview from '@/pages/CollectionPreview';
+import Content from '@/pages/Content';
+import Components from '@/pages/Components';
+import Api from '@/pages/Api';
+import Users from '@/pages/Users';
+import Login from '@/pages/Login';
+import Index from '@/pages/Index';
+import NotFound from '@/pages/NotFound';
 
-const queryClient = new QueryClient();
+// Create a QueryClient instance
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <CMSProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider defaultTheme="light" storageKey="cms-theme">
+        <Router>
           <Routes>
-            <Route
-              path="/"
-              element={
-                <AppLayout>
-                  <Dashboard />
-                </AppLayout>
-              }
-            />
-            <Route
-              path="/collections"
-              element={
-                <AppLayout>
-                  <Collections />
-                </AppLayout>
-              }
-            />
-            <Route
-              path="/collections/:collectionId"
-              element={
-                <AppLayout>
-                  <CollectionDetail />
-                </AppLayout>
-              }
-            />
-            <Route
-              path="/users"
-              element={
-                <AppLayout>
-                  <Users />
-                </AppLayout>
-              }
-            />
-            <Route
-              path="/settings"
-              element={
-                <AppLayout>
-                  <Settings />
-                </AppLayout>
-              }
-            />
-            <Route
-              path="/activity"
-              element={
-                <AppLayout>
-                  <Activity />
-                </AppLayout>
-              }
-            />
+            <Route path="/" element={<Index />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/collections" element={<Collections />} />
+            <Route path="/collections/:collectionId/fields" element={<FieldConfiguration />} />
+            <Route path="/collections/:collectionId/preview" element={<CollectionPreview />} />
+            <Route path="/content" element={<Content />} />
+            <Route path="/components" element={<Components />} />
+            <Route path="/api" element={<Api />} />
+            <Route path="/users" element={<Users />} />
+            <Route path="/login" element={<Login />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </BrowserRouter>
-      </CMSProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+        </Router>
+        
+        <Toaster />
+      </ThemeProvider>
+    </QueryClientProvider>
+  );
+}
 
 export default App;

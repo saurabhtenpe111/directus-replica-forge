@@ -1,127 +1,79 @@
 
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { BarChart3, Database, Home, Layers, Settings, Users, FileText } from 'lucide-react';
-import { 
-  Sidebar as ShadcnSidebar, 
-  SidebarContent, 
-  SidebarFooter, 
-  SidebarHeader, 
-  SidebarTrigger,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton
-} from '@/components/ui/sidebar';
-import { useCMS } from '@/context/CMSContext';
+import { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { LayoutDashboard, Box, Component, FileText, FileCode, Users, Menu, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
-export const Sidebar: React.FC = () => {
-  const { collections } = useCMS();
+const navItems = [
+  { name: 'Dashboard', path: '/', icon: LayoutDashboard },
+  { name: 'Collections', path: '/collections', icon: Box },
+  { name: 'Components', path: '/components', icon: Component },
+  { name: 'Content', path: '/content', icon: FileText },
+  { name: 'API', path: '/api', icon: FileCode },
+  { name: 'Users', path: '/users', icon: Users },
+];
+
+export function Sidebar() {
+  const location = useLocation();
+  const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <ShadcnSidebar className="border-r border-directus-border">
-      <SidebarHeader className="h-14 flex items-center justify-between px-4">
-        <div className="flex items-center">
-          <div className="w-8 h-8 bg-directus-blue rounded-lg flex items-center justify-center text-white font-semibold mr-2">
-            D
-          </div>
-          <span className="font-semibold text-white">Directus</span>
+    <>
+      <div className="md:hidden fixed top-4 left-4 z-50">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => setCollapsed(!collapsed)}
+          className="bg-white"
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
+      </div>
+      
+      <div className={cn(
+        "fixed inset-y-0 left-0 z-40 w-64 bg-cms-darkBlue text-white transition-transform duration-300 ease-in-out", 
+        collapsed ? "-translate-x-full" : "translate-x-0",
+        "md:translate-x-0"
+      )}>
+        <div className="flex justify-between items-center p-4 h-16">
+          <h1 className="text-lg font-bold">CMS System</h1>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => setCollapsed(true)} 
+            className="md:hidden text-white hover:bg-slate-700"
+          >
+            <X className="h-5 w-5" />
+          </Button>
         </div>
-        <SidebarTrigger className="text-white" />
-      </SidebarHeader>
-
-      <SidebarContent className="px-2">
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <Link to="/" className="flex items-center gap-2">
-                    <Home size={18} />
-                    <span>Dashboard</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel>Content</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <Link to="/collections" className="flex items-center gap-2">
-                    <Database size={18} />
-                    <span>Collections</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+        
+        <nav className="mt-6">
+          <ul className="space-y-1">
+            {navItems.map((item) => {
+              const isActive = location.pathname === item.path;
+              const Icon = item.icon;
               
-              {collections.map(collection => (
-                <SidebarMenuItem key={collection.id}>
-                  <SidebarMenuButton asChild>
-                    <Link 
-                      to={`/collections/${collection.id}`} 
-                      className="flex items-center gap-2 pl-8"
-                    >
-                      <FileText size={16} />
-                      <span>{collection.name}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel>Administration</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <Link to="/users" className="flex items-center gap-2">
-                    <Users size={18} />
-                    <span>Users</span>
+              return (
+                <li key={item.path}>
+                  <Link
+                    to={item.path}
+                    className={cn(
+                      "flex items-center px-4 py-3 mx-2 rounded-md transition-colors",
+                      isActive 
+                        ? "bg-slate-700 text-white" 
+                        : "text-slate-300 hover:bg-slate-700 hover:text-white"
+                    )}
+                  >
+                    <Icon className="h-5 w-5 mr-3" />
+                    <span>{item.name}</span>
                   </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <Link to="/settings" className="flex items-center gap-2">
-                    <Settings size={18} />
-                    <span>Settings</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <Link to="/activity" className="flex items-center gap-2">
-                    <BarChart3 size={18} />
-                    <span>Activity</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-
-      <SidebarFooter className="px-4 py-3 border-t border-sidebar-border">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-directus-blue">
-            A
-          </div>
-          <div className="overflow-hidden">
-            <div className="truncate text-sm text-white">Admin User</div>
-            <div className="truncate text-xs text-gray-400">admin@example.com</div>
-          </div>
-        </div>
-      </SidebarFooter>
-    </ShadcnSidebar>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+      </div>
+    </>
   );
-};
+}
