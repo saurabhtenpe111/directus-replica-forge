@@ -342,7 +342,7 @@ export default function FieldConfiguration() {
           <Card>
             <CardContent className="pt-6">
               <FieldValidationPanel 
-                fieldType={selectedField?.type || null} 
+                fieldType={selectedFieldId ? fields.find(f => f.id === selectedFieldId)?.type || null : null} 
                 onUpdate={(data) => {
                   console.log("Validation settings updated:", data);
                 }}

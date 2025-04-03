@@ -13,6 +13,7 @@ import { NumberInputField } from '@/components/fields/inputs/NumberInputField';
 import { SelectButtonField } from '@/components/form-fields/SelectButtonField';
 import { useQuery } from '@tanstack/react-query';
 import { getFieldsForCollection } from '@/services/CollectionService';
+import { adaptFieldsForPreview } from '@/utils/fieldAdapters';
 
 export default function CollectionPreview() {
   const { collectionId } = useParams<{ collectionId: string }>();
@@ -27,7 +28,7 @@ export default function CollectionPreview() {
 
   useEffect(() => {
     if (fields) {
-      setFieldDefinitions(fields);
+      setFieldDefinitions(adaptFieldsForPreview(fields));
       // Initialize form data with default values
       const initialData = fields.reduce((acc, field) => {
         acc[field.apiId] = field.defaultValue || '';

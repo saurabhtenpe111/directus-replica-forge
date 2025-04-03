@@ -60,23 +60,23 @@ export function SelectButtonField({
 
   // We need to render different ToggleGroup based on the type
   // to fix the TypeScript error
-  return (
-    <div className="space-y-2">
-      {label && (
-        <Label
-          htmlFor={id}
-          className={cn(
-            "block",
-            invalid ? "text-red-500" : "",
-            disabled ? "text-gray-400 cursor-not-allowed" : "",
-            required ? "after:content-['*'] after:text-red-500 after:ml-0.5" : ""
-          )}
-        >
-          {label}
-        </Label>
-      )}
+  if (multiple) {
+    return (
+      <div className="space-y-2">
+        {label && (
+          <Label
+            htmlFor={id}
+            className={cn(
+              "block",
+              invalid ? "text-red-500" : "",
+              disabled ? "text-gray-400 cursor-not-allowed" : "",
+              required ? "after:content-['*'] after:text-red-500 after:ml-0.5" : ""
+            )}
+          >
+            {label}
+          </Label>
+        )}
 
-      {multiple ? (
         <ToggleGroup 
           type="multiple"
           value={currentValue as string[]}
@@ -95,7 +95,37 @@ export function SelectButtonField({
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
-      ) : (
+
+        {helpText && !invalid && (
+          <p id={helpTextId} className="text-xs text-gray-500 mt-1">
+            {helpText}
+          </p>
+        )}
+
+        {invalid && errorMessage && (
+          <p id={errorId} className="text-xs text-red-500 mt-1">
+            {errorMessage}
+          </p>
+        )}
+      </div>
+    );
+  } else {
+    return (
+      <div className="space-y-2">
+        {label && (
+          <Label
+            htmlFor={id}
+            className={cn(
+              "block",
+              invalid ? "text-red-500" : "",
+              disabled ? "text-gray-400 cursor-not-allowed" : "",
+              required ? "after:content-['*'] after:text-red-500 after:ml-0.5" : ""
+            )}
+          >
+            {label}
+          </Label>
+        )}
+
         <ToggleGroup 
           type="single"
           value={currentValue as string}
@@ -114,21 +144,21 @@ export function SelectButtonField({
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
-      )}
 
-      {helpText && !invalid && (
-        <p id={helpTextId} className="text-xs text-gray-500 mt-1">
-          {helpText}
-        </p>
-      )}
+        {helpText && !invalid && (
+          <p id={helpTextId} className="text-xs text-gray-500 mt-1">
+            {helpText}
+          </p>
+        )}
 
-      {invalid && errorMessage && (
-        <p id={errorId} className="text-xs text-red-500 mt-1">
-          {errorMessage}
-        </p>
-      )}
-    </div>
-  );
+        {invalid && errorMessage && (
+          <p id={errorId} className="text-xs text-red-500 mt-1">
+            {errorMessage}
+          </p>
+        )}
+      </div>
+    );
+  }
 }
 
 export default SelectButtonField;

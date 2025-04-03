@@ -14,6 +14,9 @@ export interface Collection {
   updated_at: string;
   settings?: any;
   permissions?: any;
+  iconColor?: string;
+  fields?: any[];
+  lastUpdated?: string;
 }
 
 export interface CollectionFormData {
@@ -64,19 +67,26 @@ export async function fetchCollections(): Promise<Collection[]> {
       }
     }
 
-    return (collectionsData || []).map((collection) => ({
-      id: collection.id,
-      title: collection.title,
-      api_id: collection.api_id,
-      description: collection.description || '',
-      icon: collection.icon || 'C',
-      icon_color: collection.icon_color || 'blue',
-      status: collection.status,
-      created_at: collection.created_at,
-      updated_at: collection.updated_at,
-      settings: collection.settings || {},
-      permissions: collection.permissions || []
-    }));
+    return (collectionsData || []).map((collection) => {
+      const settings = collection.settings !== undefined ? collection.settings : {};
+      const permissions = collection.permissions !== undefined ? collection.permissions : [];
+      
+      return {
+        id: collection.id,
+        title: collection.title,
+        api_id: collection.api_id,
+        description: collection.description || '',
+        icon: collection.icon || 'C',
+        icon_color: collection.icon_color || 'blue',
+        iconColor: collection.icon_color || 'blue',
+        status: collection.status,
+        created_at: collection.created_at,
+        updated_at: collection.updated_at,
+        lastUpdated: collection.updated_at,
+        settings: settings,
+        permissions: permissions
+      };
+    });
   } catch (error) {
     console.error('Error fetching collections:', error);
     throw error;
@@ -119,6 +129,9 @@ export async function createCollection(params: CreateCollectionParams): Promise<
       throw new Error('Failed to create collection - no data returned');
     }
 
+    const settings = newCollection.settings !== undefined ? newCollection.settings : {};
+    const permissions = newCollection.permissions !== undefined ? newCollection.permissions : [];
+
     return {
       id: newCollection.id,
       title: newCollection.title,
@@ -126,11 +139,13 @@ export async function createCollection(params: CreateCollectionParams): Promise<
       description: newCollection.description || '',
       icon: newCollection.icon || 'C',
       icon_color: newCollection.icon_color || 'blue',
+      iconColor: newCollection.icon_color || 'blue',
       status: newCollection.status,
       created_at: newCollection.created_at,
       updated_at: newCollection.updated_at,
-      settings: newCollection.settings || {},
-      permissions: newCollection.permissions || []
+      lastUpdated: newCollection.updated_at,
+      settings: settings,
+      permissions: permissions
     };
   } catch (error: any) {
     console.error('Error creating collection:', error);

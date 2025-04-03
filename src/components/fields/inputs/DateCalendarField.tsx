@@ -12,7 +12,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 
-interface DateCalendarFieldProps {
+export interface DateCalendarFieldProps {
   value: Date | null;
   onChange: (date: Date | null) => void;
   dateFormat?: string;
@@ -188,57 +188,11 @@ export function DateCalendarField({
 
   const renderCalendarContent = () => {
     if (yearPickerOnly) {
-      return (
-        <div className="p-2">
-          <div className="grid grid-cols-3 gap-2">
-            {Array.from({ length: 12 }, (_, i) => {
-              const year = new Date().getFullYear() - 5 + i;
-              return (
-                <Button
-                  key={year}
-                  variant="outline"
-                  className="h-10"
-                  onClick={() => {
-                    const date = new Date();
-                    date.setFullYear(year);
-                    handleCalendarSelect(date);
-                  }}
-                >
-                  {year}
-                </Button>
-              );
-            })}
-          </div>
-        </div>
-      );
+      return null;
     }
 
     if (monthPickerOnly) {
-      return (
-        <div className="p-2">
-          <div className="grid grid-cols-3 gap-2">
-            {Array.from({ length: 12 }, (_, i) => {
-              const monthNames = Array.from({ length: 12 }, (_, m) =>
-                new Date(0, m).toLocaleString(locale || undefined, { month: 'short' })
-              );
-              return (
-                <Button
-                  key={i}
-                  variant="outline"
-                  className="h-10"
-                  onClick={() => {
-                    const date = new Date();
-                    date.setMonth(i);
-                    handleCalendarSelect(date);
-                  }}
-                >
-                  {monthNames[i]}
-                </Button>
-              );
-            })}
-          </div>
-        </div>
-      );
+      return null;
     }
 
     if (allowRangeSelection) {
@@ -247,8 +201,8 @@ export function DateCalendarField({
           <div className={showMultipleMonths ? "flex" : ""}>
             <Calendar
               mode="range"
-              selected={dateRange as any}
-              onSelect={handleRangeSelect as any}
+              selected={dateRange}
+              onSelect={handleRangeSelect}
               disabled={(date) => {
                 if (minDate && date < minDate) return true;
                 if (maxDate && date > maxDate) return true;
@@ -261,8 +215,8 @@ export function DateCalendarField({
             {showMultipleMonths && (
               <Calendar
                 mode="range"
-                selected={dateRange as any}
-                onSelect={handleRangeSelect as any}
+                selected={dateRange}
+                onSelect={handleRangeSelect}
                 disabled={(date) => {
                   if (minDate && date < minDate) return true;
                   if (maxDate && date > maxDate) return true;
@@ -550,3 +504,7 @@ export function DateCalendarField({
     </div>
   );
 }
+
+export type DateCalendarFieldWithHelpText = DateCalendarFieldProps & {
+  helpText?: string;
+};

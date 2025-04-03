@@ -77,13 +77,13 @@ export function FieldConfigPanel({
     floatLabel: false,
     filled: false,
     showButtons: false,
-    buttonLayout: 'horizontal',
+    buttonLayout: "horizontal" as "horizontal" | "vertical",
     prefix: '',
     suffix: ''
   });
   const [advancedSettings, setAdvancedSettings] = useState({
     showButtons: false,
-    buttonLayout: 'horizontal',
+    buttonLayout: "horizontal" as "horizontal" | "vertical",
     prefix: '',
     suffix: ''
   });
