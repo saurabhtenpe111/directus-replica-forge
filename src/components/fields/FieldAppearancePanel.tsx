@@ -23,7 +23,6 @@ import { Button } from "@/components/ui/button";
 import { Moon, Sun, Eye, Code, Palette } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
-// Fix this interface to include initialData
 export interface FieldAppearancePanelProps {
   form: UseFormReturn<any, any, undefined>;
   fieldType: string | null;
