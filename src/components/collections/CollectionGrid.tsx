@@ -48,7 +48,7 @@ export function CollectionGrid({ collections, viewMode, sortOption, onCreateNew 
               fields={collection.fields || 0}
               items={collection.items || 0}
               lastUpdated={collection.lastUpdated || collection.updated_at}
-              status={collection.status}
+              status={(collection.status as "published" | "draft") || "draft"}
             />
           ))}
         </div>
@@ -68,7 +68,7 @@ export function CollectionGrid({ collections, viewMode, sortOption, onCreateNew 
           fields={collection.fields || 0}
           items={collection.items || 0}
           lastUpdated={collection.lastUpdated || collection.updated_at}
-          status={collection.status}
+          status={(collection.status as "published" | "draft") || "draft"}
         />
       ))}
       

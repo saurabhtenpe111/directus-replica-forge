@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,6 +19,9 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Moon, Sun, Eye, Code, Palette } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 
 // Fix this interface to include initialData
 export interface FieldAppearancePanelProps {
@@ -48,6 +51,20 @@ export function FieldAppearancePanel({
   const [previewStyle, setPreviewStyle] = useState<React.CSSProperties>({});
   const [previewLabelStyle, setPreviewLabelStyle] = useState<React.CSSProperties>({});
   const [previewInputStyle, setPreviewInputStyle] = useState<React.CSSProperties>({});
+  const [customCss, setCustomCss] = useState(initialData?.customCss || '');
+  const [selectedVariation, setSelectedVariation] = useState(initialData?.uiVariation || 'default');
+  const [isDarkMode, setIsDarkMode] = useState(initialData?.isDarkMode || false);
+  const [previewState, setPreviewState] = useState('default');
+  
+  // Predefined UI variations
+  const uiVariations = [
+    { id: 'default', name: 'Default', styles: {} },
+    { id: 'filled', name: 'Filled', styles: { filled: true, showBorder: false, showBackground: true, roundedCorners: 'small' } },
+    { id: 'outlined', name: 'Outlined', styles: { filled: false, showBorder: true, showBackground: false, roundedCorners: 'medium' } },
+    { id: 'floating', name: 'Floating Label', styles: { floatLabel: true, filled: true, showBorder: false, roundedCorners: 'none' } },
+    { id: 'minimal', name: 'Minimal', styles: { showBorder: false, showBackground: false, roundedCorners: 'large', textAlign: 'center' } },
+    { id: 'compact', name: 'Compact', styles: { fieldSize: 'small', labelSize: 'small', roundedCorners: 'small' } },
+  ];
 
   // Update settings when any option changes
   const updateSettings = () => {
@@ -61,7 +78,10 @@ export function FieldAppearancePanel({
       showBackground,
       roundedCorners,
       fieldSize,
-      labelSize
+      labelSize,
+      customCss,
+      uiVariation: selectedVariation,
+      isDarkMode
     };
     
     onUpdate(settings);
@@ -76,13 +96,16 @@ export function FieldAppearancePanel({
                settings.labelSize === 'medium' ? '1rem' : '1.125rem',
       marginBottom: settings.labelPosition === 'top' ? '0.5rem' : '0',
       width: settings.labelPosition === 'left' ? `${settings.labelWidth}%` : 'auto',
-      textAlign: settings.textAlign as 'left' | 'center' | 'right'
+      textAlign: settings.textAlign as 'left' | 'center' | 'right',
+      color: settings.isDarkMode ? '#fff' : '#333',
+      fontWeight: settings.labelSize === 'large' ? 600 : 500,
+      transition: 'all 0.2s ease'
     };
     
     // Input styles
     const inputStyle: React.CSSProperties = {
-      backgroundColor: settings.filled ? '#f1f5f9' : 'transparent',
-      border: settings.showBorder ? '1px solid #cbd5e1' : 'none',
+      backgroundColor: settings.filled ? (settings.isDarkMode ? '#374151' : '#f1f5f9') : 'transparent',
+      border: settings.showBorder ? (settings.isDarkMode ? '1px solid #4b5563' : '1px solid #cbd5e1') : 'none',
       borderRadius: settings.roundedCorners === 'none' ? '0' : 
                    settings.roundedCorners === 'small' ? '0.25rem' : 
                    settings.roundedCorners === 'medium' ? '0.375rem' : '0.5rem',
@@ -91,12 +114,39 @@ export function FieldAppearancePanel({
       fontSize: settings.fieldSize === 'small' ? '0.875rem' : 
                settings.fieldSize === 'medium' ? '1rem' : '1.125rem',
       width: settings.labelPosition === 'left' ? `${100 - settings.labelWidth}%` : '100%',
+      color: settings.isDarkMode ? '#e5e7eb' : '#333',
+      boxShadow: settings.floatLabel ? (settings.isDarkMode ? '0 1px 2px rgba(0,0,0,0.4)' : '0 1px 2px rgba(0,0,0,0.1)') : 'none',
+      transition: 'all 0.2s ease'
     };
+    
+    // Apply states for preview
+    if (previewState === 'hover') {
+      inputStyle.borderColor = settings.isDarkMode ? '#6b7280' : '#94a3b8';
+      inputStyle.backgroundColor = settings.filled 
+        ? (settings.isDarkMode ? '#4b5563' : '#e2e8f0') 
+        : (settings.isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)');
+    } else if (previewState === 'focus') {
+      inputStyle.borderColor = settings.isDarkMode ? '#60a5fa' : '#3b82f6';
+      inputStyle.boxShadow = `0 0 0 2px ${settings.isDarkMode ? 'rgba(96, 165, 250, 0.3)' : 'rgba(59, 130, 246, 0.3)'}`;
+      inputStyle.outline = 'none';
+    } else if (previewState === 'disabled') {
+      inputStyle.backgroundColor = settings.isDarkMode ? '#1f2937' : '#f8fafc';
+      inputStyle.color = settings.isDarkMode ? '#6b7280' : '#94a3b8';
+      inputStyle.cursor = 'not-allowed';
+      inputStyle.opacity = '0.7';
+    } else if (previewState === 'error') {
+      inputStyle.borderColor = '#ef4444';
+      inputStyle.boxShadow = `0 0 0 2px rgba(239, 68, 68, 0.2)`;
+    }
     
     // Container style
     const containerStyle: React.CSSProperties = {
       display: settings.labelPosition === 'left' ? 'flex' : 'block',
       alignItems: settings.labelPosition === 'left' ? 'center' : 'flex-start',
+      backgroundColor: settings.isDarkMode ? '#1f2937' : '#ffffff',
+      padding: '1rem',
+      borderRadius: '0.5rem',
+      transition: 'all 0.2s ease'
     };
     
     setPreviewLabelStyle(labelStyle);
@@ -105,7 +155,7 @@ export function FieldAppearancePanel({
   };
   
   // Effect to update preview on initial load
-  React.useEffect(() => {
+  useEffect(() => {
     updateSettings();
   }, []);
   
@@ -142,6 +192,12 @@ export function FieldAppearancePanel({
       case 'labelSize':
         setLabelSize(value);
         break;
+      case 'customCss':
+        setCustomCss(value);
+        break;
+      case 'isDarkMode':
+        setIsDarkMode(value);
+        break;
       default:
         break;
     }
@@ -150,6 +206,27 @@ export function FieldAppearancePanel({
     setTimeout(() => {
       updateSettings();
     }, 0);
+  };
+
+  // Apply UI variation
+  const applyUiVariation = (variationId: string) => {
+    const variation = uiVariations.find(v => v.id === variationId);
+    if (variation) {
+      setSelectedVariation(variationId);
+      
+      if (variation.styles.filled !== undefined) setFilled(variation.styles.filled);
+      if (variation.styles.showBorder !== undefined) setShowBorder(variation.styles.showBorder);
+      if (variation.styles.showBackground !== undefined) setShowBackground(variation.styles.showBackground);
+      if (variation.styles.roundedCorners !== undefined) setRoundedCorners(variation.styles.roundedCorners);
+      if (variation.styles.floatLabel !== undefined) setFloatLabel(variation.styles.floatLabel);
+      if (variation.styles.textAlign !== undefined) setTextAlign(variation.styles.textAlign);
+      if (variation.styles.fieldSize !== undefined) setFieldSize(variation.styles.fieldSize);
+      if (variation.styles.labelSize !== undefined) setLabelSize(variation.styles.labelSize);
+      
+      setTimeout(() => {
+        updateSettings();
+      }, 0);
+    }
   };
   
   return (
@@ -162,6 +239,29 @@ export function FieldAppearancePanel({
         </TabsList>
         
         <TabsContent value="display" className="space-y-4">
+          <FormItem>
+            <FormLabel>UI Variations</FormLabel>
+            <FormDescription>
+              Choose a predefined style variation for the field
+            </FormDescription>
+            <div className="grid grid-cols-3 gap-2 mt-2">
+              {uiVariations.map((variation) => (
+                <Button
+                  key={variation.id}
+                  type="button"
+                  variant={selectedVariation === variation.id ? "default" : "outline"}
+                  className={cn(
+                    "h-auto py-2 px-3 text-sm font-medium",
+                    selectedVariation === variation.id && "border-blue-600"
+                  )}
+                  onClick={() => applyUiVariation(variation.id)}
+                >
+                  {variation.name}
+                </Button>
+              ))}
+            </div>
+          </FormItem>
+          
           <FormItem>
             <FormLabel>Text Alignment</FormLabel>
             <FormControl>
@@ -359,6 +459,21 @@ export function FieldAppearancePanel({
         </TabsContent>
         
         <TabsContent value="extras" className="space-y-4">
+          <FormItem>
+            <FormLabel>Custom CSS</FormLabel>
+            <FormControl>
+              <Textarea
+                value={customCss}
+                onChange={(e) => handleSettingChange('customCss', e.target.value)}
+                placeholder="/* Add your custom CSS here */&#10;.my-field {&#10;  border-color: #3b82f6;&#10;}"
+                className="font-mono text-sm h-32"
+              />
+            </FormControl>
+            <FormDescription>
+              Add custom CSS to style the field directly
+            </FormDescription>
+          </FormItem>
+          
           {fieldType === 'text' && (
             <>
               <FormItem className="flex flex-row items-center justify-between space-x-2 rounded-lg border p-3 shadow-sm">
@@ -437,23 +552,103 @@ export function FieldAppearancePanel({
         </TabsContent>
       </Tabs>
       
-      <div className="mt-6 border rounded-lg p-4">
-        <h3 className="text-sm font-medium mb-3">Preview</h3>
-        <div style={previewStyle}>
-          <label 
-            className="block text-gray-700"
-            style={previewLabelStyle}
-          >
-            Field Label
-          </label>
-          <input
-            type="text"
-            className="border px-3 py-2 w-full rounded"
-            placeholder="Field placeholder"
-            style={previewInputStyle}
-          />
+      <Card className="mt-6 border rounded-lg overflow-hidden">
+        <div className="flex justify-between items-center p-3 border-b bg-gray-50">
+          <h3 className="text-sm font-medium">Live Preview</h3>
+          <div className="flex gap-2">
+            <div className="border rounded-md flex">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className={cn("rounded-r-none", previewState === 'default' && "bg-gray-200")}
+                onClick={() => setPreviewState('default')}
+              >
+                Default
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className={cn("rounded-none border-x border-gray-200", previewState === 'hover' && "bg-gray-200")}
+                onClick={() => setPreviewState('hover')}
+              >
+                Hover
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className={cn("rounded-none border-r border-gray-200", previewState === 'focus' && "bg-gray-200")}
+                onClick={() => setPreviewState('focus')}
+              >
+                Focus
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className={cn("rounded-none border-r border-gray-200", previewState === 'disabled' && "bg-gray-200")}
+                onClick={() => setPreviewState('disabled')}
+              >
+                Disabled
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className={cn("rounded-l-none", previewState === 'error' && "bg-gray-200")}
+                onClick={() => setPreviewState('error')}
+              >
+                Error
+              </Button>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="w-8 h-8"
+              onClick={() => handleSettingChange('isDarkMode', !isDarkMode)}
+            >
+              {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </Button>
+          </div>
         </div>
-      </div>
+        <CardContent className="p-0">
+          <div style={previewStyle}>
+            <label 
+              className={cn("block", previewState === 'error' && "text-red-500")}
+              style={previewLabelStyle}
+            >
+              Field Label
+            </label>
+            <input
+              type="text"
+              className={cn(
+                "border",
+                previewState === 'disabled' && "cursor-not-allowed opacity-70",
+                previewState === 'error' && "border-red-500"
+              )}
+              placeholder="Field placeholder"
+              style={previewInputStyle}
+              disabled={previewState === 'disabled'}
+            />
+            
+            {previewState === 'error' && (
+              <p className="mt-1 text-xs text-red-500">This field has an error</p>
+            )}
+            
+            {customCss && (
+              <div className="mt-4 pt-4 border-t border-gray-200 text-xs text-gray-500">
+                <p>Custom CSS Applied</p>
+                <pre className="mt-1 p-2 bg-gray-100 rounded overflow-auto text-xs">
+                  {customCss}
+                </pre>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
