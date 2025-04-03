@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -22,7 +21,6 @@ import { FieldAdvancedPanel } from './FieldAdvancedPanel';
 import { InputTextField } from './inputs/InputTextField';
 import { NumberInputField } from './inputs/NumberInputField';
 
-// Define a dynamic schema based on field type
 const getFieldSchema = (fieldType: string | null) => {
   const baseSchema = {
     name: z.string().min(2, { message: "Field name must be at least 2 characters" }),
@@ -75,15 +73,32 @@ export function FieldConfigPanel({
 }: FieldConfigPanelProps) {
   const [activeTab, setActiveTab] = useState('general');
   const [validationSettings, setValidationSettings] = useState({});
-  const [appearanceSettings, setAppearanceSettings] = useState({});
-  const [advancedSettings, setAdvancedSettings] = useState({});
+  const [appearanceSettings, setAppearanceSettings] = useState({
+    floatLabel: false,
+    filled: false,
+    showButtons: false,
+    buttonLayout: 'horizontal',
+    prefix: '',
+    suffix: ''
+  });
+  const [advancedSettings, setAdvancedSettings] = useState({
+    showButtons: false,
+    buttonLayout: 'horizontal',
+    prefix: '',
+    suffix: ''
+  });
   
   useEffect(() => {
-    // Initialize settings from fieldData if available
     if (fieldData) {
       setValidationSettings(fieldData.validation || {});
-      setAppearanceSettings(fieldData.appearance || {});
-      setAdvancedSettings(fieldData.advanced || {});
+      setAppearanceSettings({
+        ...appearanceSettings,
+        ...(fieldData.appearance || {})
+      });
+      setAdvancedSettings({
+        ...advancedSettings,
+        ...(fieldData.advanced || {})
+      });
     }
   }, [fieldData]);
   
@@ -109,7 +124,6 @@ export function FieldConfigPanel({
   });
 
   const handleSubmit = (values: any) => {
-    // Combine all settings
     const combinedData = {
       ...values,
       validation: validationSettings,
@@ -130,10 +144,9 @@ export function FieldConfigPanel({
 
   const handleUpdateAdvanced = (data: any) => {
     setAdvancedSettings(data);
-    onUpdateAdvanced(data); // Pass to parent component
+    onUpdateAdvanced(data);
   };
-  
-  // Render field preview based on field type
+
   const renderFieldPreview = () => {
     switch (fieldType) {
       case 'text':

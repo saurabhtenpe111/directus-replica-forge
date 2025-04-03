@@ -5,16 +5,15 @@ import { Json } from '@/integrations/supabase/types';
 export interface Collection {
   id: string;
   title: string;
-  apiId: string;
+  api_id: string;
   description: string;
   icon: string;
-  iconColor: string;
-  status: 'published' | 'draft';
-  fields: number;
-  items?: number;
-  lastUpdated: string;
-  settings?: Json;
-  permissions?: string[];
+  icon_color: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  settings?: any;
+  permissions?: any;
 }
 
 export interface CollectionFormData {
@@ -28,7 +27,6 @@ export interface CollectionFormData {
 
 export async function fetchCollections(): Promise<Collection[]> {
   try {
-    // First, get the collections
     const { data: collectionsData, error: collectionsError } = await supabase
       .from('collections')
       .select('*')
@@ -38,7 +36,6 @@ export async function fetchCollections(): Promise<Collection[]> {
       throw collectionsError;
     }
 
-    // Count fields per collection
     const fieldCounts: Record<string, number> = {};
     for (const collection of collectionsData || []) {
       const { count, error } = await supabase
@@ -53,7 +50,6 @@ export async function fetchCollections(): Promise<Collection[]> {
       }
     }
 
-    // Count content items per collection
     const contentCounts: Record<string, number> = {};
     for (const collection of collectionsData || []) {
       const { count, error } = await supabase
@@ -68,19 +64,16 @@ export async function fetchCollections(): Promise<Collection[]> {
       }
     }
 
-    // Map the data to our Collection interface
     return (collectionsData || []).map((collection) => ({
       id: collection.id,
       title: collection.title,
-      apiId: collection.api_id,
+      api_id: collection.api_id,
       description: collection.description || '',
       icon: collection.icon || 'C',
-      iconColor: collection.icon_color || 'blue',
-      status: collection.status as 'published' | 'draft',
-      fields: fieldCounts[collection.id] || 0,
-      items: contentCounts[collection.id] || 0,
-      lastUpdated: new Date(collection.updated_at).toLocaleDateString(),
-      // Handle settings and permissions that might not exist in the database
+      icon_color: collection.icon_color || 'blue',
+      status: collection.status,
+      created_at: collection.created_at,
+      updated_at: collection.updated_at,
       settings: collection.settings || {},
       permissions: collection.permissions || []
     }));
@@ -103,7 +96,6 @@ export async function createCollection(params: CreateCollectionParams): Promise<
   try {
     const { name, apiId, description = '', status = 'published', settings = {}, permissions = [] } = params;
     
-    // Create the insert object
     const insertObj = { 
       title: name, 
       api_id: apiId, 
@@ -130,14 +122,13 @@ export async function createCollection(params: CreateCollectionParams): Promise<
     return {
       id: newCollection.id,
       title: newCollection.title,
-      apiId: newCollection.api_id,
+      api_id: newCollection.api_id,
       description: newCollection.description || '',
       icon: newCollection.icon || 'C',
-      iconColor: newCollection.icon_color || 'blue',
-      status: newCollection.status as 'published' | 'draft',
-      fields: 0,
-      items: 0,
-      lastUpdated: new Date(newCollection.updated_at).toLocaleDateString(),
+      icon_color: newCollection.icon_color || 'blue',
+      status: newCollection.status,
+      created_at: newCollection.created_at,
+      updated_at: newCollection.updated_at,
       settings: newCollection.settings || {},
       permissions: newCollection.permissions || []
     };
@@ -152,7 +143,6 @@ export async function createCollection(params: CreateCollectionParams): Promise<
   }
 }
 
-// ContentItem interface matches the structure shown in the provided image
 export interface ContentItem {
   id: string;
   collection_id: string;
@@ -187,7 +177,6 @@ export async function getContentItems(collectionId: string): Promise<ContentItem
   }
 }
 
-// Field interface matching the structure shown in the provided image
 export interface Field {
   id: string;
   name: string;
@@ -204,11 +193,10 @@ export interface Field {
   position?: number;
   required: boolean;
   ui_options?: any;
-  config?: any; // For backward compatibility
-  order?: number; // For backward compatibility
+  config?: any;
+  order?: number;
 }
 
-// Field settings interface to properly type the settings
 export interface FieldSettings {
   default_value?: any;
   validation?: any;
@@ -231,7 +219,6 @@ export async function getFieldsForCollection(collectionId: string): Promise<Fiel
     }
 
     return (data || []).map(field => {
-      // Safely access nested properties
       const settings = field.settings as FieldSettings || {};
       
       return {
@@ -241,7 +228,7 @@ export async function getFieldsForCollection(collectionId: string): Promise<Fiel
         type: field.type,
         collection_id: field.collection_id,
         description: field.description || '',
-        label: field.name, // Using name as fallback for label
+        label: field.name,
         placeholder: '',
         default_value: settings.default_value || null,
         validation: settings.validation || null,
@@ -250,7 +237,6 @@ export async function getFieldsForCollection(collectionId: string): Promise<Fiel
         position: field.sort_order || 0,
         required: field.required || false,
         ui_options: settings.ui_options || null,
-        // For backward compatibility
         config: field.settings || {},
         order: field.sort_order || 0
       };
@@ -263,7 +249,6 @@ export async function getFieldsForCollection(collectionId: string): Promise<Fiel
 
 export async function createField(collectionId: string, fieldData: any): Promise<Field> {
   try {
-    // Check if collection exists
     const { data: collection, error: collectionError } = await supabase
       .from('collections')
       .select('id')
@@ -274,7 +259,6 @@ export async function createField(collectionId: string, fieldData: any): Promise
       throw new Error(`Collection with ID ${collectionId} not found`);
     }
 
-    // We'll store most of the custom field props in the settings JSON column
     const fieldSettings: FieldSettings = {
       default_value: fieldData.default_value || null,
       validation: fieldData.validation || null,
@@ -315,7 +299,7 @@ export async function createField(collectionId: string, fieldData: any): Promise
       type: field.type,
       collection_id: field.collection_id,
       description: field.description || '',
-      label: field.name, // Using name as label
+      label: field.name,
       placeholder: '',
       default_value: fieldSettings.default_value,
       validation: fieldSettings.validation,
@@ -334,20 +318,9 @@ export async function createField(collectionId: string, fieldData: any): Promise
 }
 
 export const deleteField = async (collectionId: string, fieldId: string): Promise<void> => {
-  // This would normally make an API call to delete the field
-  // For now, we'll simulate a delay and return success
   await new Promise(resolve => setTimeout(resolve, 500));
   
   console.log(`Deleting field ${fieldId} from collection ${collectionId}`);
-  
-  // In a real application, this would call your backend API
-  // For example:
-  // return fetch(`/api/collections/${collectionId}/fields/${fieldId}`, {
-  //   method: 'DELETE',
-  // }).then(response => {
-  //   if (!response.ok) throw new Error('Failed to delete field');
-  //   return response.json();
-  // });
   
   return Promise.resolve();
 };

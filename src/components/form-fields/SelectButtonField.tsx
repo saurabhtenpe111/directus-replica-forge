@@ -58,6 +58,8 @@ export function SelectButtonField({
   const helpTextId = `${id}-help`;
   const errorId = `${id}-error`;
 
+  // We need to render different ToggleGroup based on the type
+  // to fix the TypeScript error
   return (
     <div className="space-y-2">
       {label && (
@@ -74,24 +76,45 @@ export function SelectButtonField({
         </Label>
       )}
 
-      <ToggleGroup 
-        type={multiple ? "multiple" : "single"}
-        value={multiple ? currentValue as string[] : currentValue as string}
-        onValueChange={handleValueChange}
-        className={cn("flex flex-wrap gap-2", className)}
-        disabled={disabled}
-      >
-        {options.map((option) => (
-          <ToggleGroupItem
-            key={option.value}
-            value={option.value}
-            disabled={option.disabled || disabled}
-            className="data-[state=on]:bg-blue-600 data-[state=on]:text-white"
-          >
-            {option.label}
-          </ToggleGroupItem>
-        ))}
-      </ToggleGroup>
+      {multiple ? (
+        <ToggleGroup 
+          type="multiple"
+          value={currentValue as string[]}
+          onValueChange={handleValueChange}
+          className={cn("flex flex-wrap gap-2", className)}
+          disabled={disabled}
+        >
+          {options.map((option) => (
+            <ToggleGroupItem
+              key={option.value}
+              value={option.value}
+              disabled={option.disabled || disabled}
+              className="data-[state=on]:bg-blue-600 data-[state=on]:text-white"
+            >
+              {option.label}
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
+      ) : (
+        <ToggleGroup 
+          type="single"
+          value={currentValue as string}
+          onValueChange={handleValueChange}
+          className={cn("flex flex-wrap gap-2", className)}
+          disabled={disabled}
+        >
+          {options.map((option) => (
+            <ToggleGroupItem
+              key={option.value}
+              value={option.value}
+              disabled={option.disabled || disabled}
+              className="data-[state=on]:bg-blue-600 data-[state=on]:text-white"
+            >
+              {option.label}
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
+      )}
 
       {helpText && !invalid && (
         <p id={helpTextId} className="text-xs text-gray-500 mt-1">
