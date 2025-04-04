@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -19,6 +20,26 @@ import { FieldValidationPanel } from './FieldValidationPanel';
 import { FieldAdvancedTab } from './FieldAdvancedTab'; 
 import { InputTextField } from './inputs/InputTextField';
 import { NumberInputField } from './inputs/NumberInputField';
+
+interface AppearanceSettings {
+  floatLabel?: boolean;
+  filled?: boolean;
+  width?: number;
+  display_mode?: string;
+  showCharCount?: boolean;
+  customClass?: string;
+  customCss?: string;
+}
+
+interface AdvancedSettings {
+  showButtons?: boolean;
+  buttonLayout?: 'horizontal' | 'vertical';
+  prefix?: string;
+  suffix?: string;
+  currency?: string;
+  locale?: string;
+  customData?: Record<string, any>;
+}
 
 const getFieldSchema = (fieldType: string | null) => {
   const baseSchema = {
@@ -72,8 +93,8 @@ export function FieldConfigPanel({
 }: FieldConfigPanelProps) {
   const [activeTab, setActiveTab] = useState('general');
   const [validationSettings, setValidationSettings] = useState({});
-  const [appearanceSettings, setAppearanceSettings] = useState({});
-  const [advancedSettings, setAdvancedSettings] = useState({});
+  const [appearanceSettings, setAppearanceSettings] = useState<AppearanceSettings>({});
+  const [advancedSettings, setAdvancedSettings] = useState<AdvancedSettings>({});
   
   useEffect(() => {
     if (fieldData) {
