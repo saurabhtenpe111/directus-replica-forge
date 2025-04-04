@@ -55,19 +55,21 @@ export function FieldAppearancePanel({
           <TabsTrigger value="customCSS">Custom CSS</TabsTrigger>
         </TabsList>
         
-        <Card className="mb-6">
-          <CardContent className="pt-6">
-            <h3 className="text-lg font-medium mb-4">Preview</h3>
-            <FieldPreview 
-              fieldType={fieldType} 
-              settings={settings} 
-              previewState={previewState}
-              isDarkMode={isDarkMode}
-              onPreviewStateChange={setPreviewState}
-              onDarkModeChange={setIsDarkMode}
-            />
-          </CardContent>
-        </Card>
+        {activeSubtab !== "customCSS" && (
+          <Card className="mb-6">
+            <CardContent className="pt-6">
+              <h3 className="text-lg font-medium mb-4">Preview</h3>
+              <FieldPreview 
+                fieldType={fieldType} 
+                settings={settings} 
+                previewState={previewState}
+                isDarkMode={isDarkMode}
+                onPreviewStateChange={setPreviewState}
+                onDarkModeChange={setIsDarkMode}
+              />
+            </CardContent>
+          </Card>
+        )}
         
         <TabsContent value="uiVariants">
           <UIVariantsTab 

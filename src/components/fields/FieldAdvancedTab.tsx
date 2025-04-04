@@ -1,7 +1,6 @@
 
 import React from "react";
 import { FieldAdvancedPanel } from "./FieldAdvancedPanel";
-import { FieldAppearancePanel } from "./appearance/FieldAppearancePanel";
 
 interface FieldAdvancedTabProps {
   fieldType: string | null;

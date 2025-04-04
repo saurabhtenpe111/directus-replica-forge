@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
+import { Code, Eye, Maximize2, SplitSquareVertical } from "lucide-react";
 
 interface CustomCSSTabProps {
   settings: any;
@@ -15,6 +16,14 @@ interface CustomCSSTabProps {
 
 export function CustomCSSTab({ settings, onUpdate }: CustomCSSTabProps) {
   const [activeSubTab, setActiveSubTab] = useState('code');
+  const [fullScreenMode, setFullScreenMode] = useState(false);
+  const [splitViewMode, setSplitViewMode] = useState(false);
+  const [cssValue, setCssValue] = useState(settings.customCSS || '');
+  const [fieldPreview, setFieldPreview] = useState<any>({
+    style: {},
+    state: 'default'
+  });
+  
   const [cssSnippets] = useState([
     { name: 'Focus Glow Effect', css: 'box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);' },
     { name: 'Smooth Hover Transition', css: 'transition: all 0.2s ease-in-out;' },
@@ -23,12 +32,18 @@ export function CustomCSSTab({ settings, onUpdate }: CustomCSSTabProps) {
     { name: 'Modern Border Radius', css: 'border-radius: 8px;' },
   ]);
   
+  useEffect(() => {
+    // Apply initial CSS from settings
+    setCssValue(settings.customCSS || '');
+  }, [settings.customCSS]);
+  
   const updateCustomCSS = (css: string) => {
+    setCssValue(css);
     onUpdate({ customCSS: css });
   };
   
   const addCssSnippet = (snippet: string) => {
-    const currentCSS = settings.customCSS || '';
+    const currentCSS = cssValue || '';
     const updatedCSS = currentCSS + (currentCSS ? '\n' : '') + snippet;
     updateCustomCSS(updatedCSS);
   };
@@ -36,7 +51,7 @@ export function CustomCSSTab({ settings, onUpdate }: CustomCSSTabProps) {
   const formatCSS = () => {
     try {
       // Simple CSS formatter
-      const formattedCSS = settings.customCSS
+      const formattedCSS = cssValue
         .split(';')
         .filter((line: string) => line.trim() !== '')
         .map((line: string) => `${line.trim()};`)
@@ -51,9 +66,112 @@ export function CustomCSSTab({ settings, onUpdate }: CustomCSSTabProps) {
   const resetCSS = () => {
     updateCustomCSS('');
   };
-  
+
+  const handlePreviewStateChange = (state: string) => {
+    setFieldPreview(prev => ({
+      ...prev,
+      state
+    }));
+  };
+
+  const applyCustomCSS = () => {
+    // This would apply the CSS to the actual component in a real implementation
+    console.log('Applying CSS:', cssValue);
+  };
+
+  const validateCSS = () => {
+    // Simple validation - in a real implementation, this would be more robust
+    try {
+      const testElement = document.createElement('div');
+      testElement.style.cssText = cssValue;
+      return true;
+    } catch (e) {
+      console.error('Invalid CSS:', e);
+      return false;
+    }
+  };
+
   return (
     <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-medium">Preview</h3>
+        <div className="flex items-center space-x-2">
+          <div className="flex border rounded-md overflow-hidden">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className={cn("rounded-r-none", fieldPreview.state === 'default' && "bg-gray-200")}
+              onClick={() => handlePreviewStateChange('default')}
+            >
+              Default
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className={cn("rounded-none border-x border-gray-200", fieldPreview.state === 'hover' && "bg-gray-200")}
+              onClick={() => handlePreviewStateChange('hover')}
+            >
+              Hover
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className={cn("rounded-none border-r border-gray-200", fieldPreview.state === 'focus' && "bg-gray-200")}
+              onClick={() => handlePreviewStateChange('focus')}
+            >
+              Focus
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className={cn("rounded-none border-r border-gray-200", fieldPreview.state === 'disabled' && "bg-gray-200")}
+              onClick={() => handlePreviewStateChange('disabled')}
+            >
+              Disabled
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className={cn("rounded-l-none", fieldPreview.state === 'error' && "bg-gray-200")}
+              onClick={() => handlePreviewStateChange('error')}
+            >
+              Error
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <Card className="border rounded-md overflow-hidden">
+        <CardContent className="p-6">
+          <div className="mb-6">
+            <Label className="block mb-2">Field Label</Label>
+            <div 
+              className={cn(
+                "border rounded-md px-4 py-2 w-full", 
+                fieldPreview.state === 'error' && "border-red-500",
+                fieldPreview.state === 'focus' && "ring-2 ring-blue-500 ring-opacity-50",
+                fieldPreview.state === 'disabled' && "bg-gray-100 opacity-70"
+              )}
+              style={{ ...fieldPreview.style }}
+            >
+              <Input 
+                placeholder="Field placeholder" 
+                className="border-0 p-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                disabled={fieldPreview.state === 'disabled'}
+              />
+            </div>
+            {fieldPreview.state === 'error' && (
+              <p className="text-sm text-red-500 mt-1">This field has an error</p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-medium">Custom CSS</h3>
         <div className="flex space-x-2">
@@ -78,8 +196,14 @@ export function CustomCSSTab({ settings, onUpdate }: CustomCSSTabProps) {
         <div className="bg-gray-100 dark:bg-gray-800 p-3 border-b flex justify-between items-center">
           <Tabs defaultValue="code" value={activeSubTab} onValueChange={setActiveSubTab}>
             <TabsList>
-              <TabsTrigger value="code">Code</TabsTrigger>
-              <TabsTrigger value="visual">Visual</TabsTrigger>
+              <TabsTrigger value="code" className="flex items-center gap-1">
+                <Code className="h-4 w-4" />
+                Code
+              </TabsTrigger>
+              <TabsTrigger value="visual" className="flex items-center gap-1">
+                <Eye className="h-4 w-4" />
+                Visual
+              </TabsTrigger>
             </TabsList>
           </Tabs>
           
@@ -87,22 +211,26 @@ export function CustomCSSTab({ settings, onUpdate }: CustomCSSTabProps) {
             <Button 
               size="sm" 
               variant="ghost"
-              className="h-8 px-3"
+              className="h-8 px-3 flex items-center gap-1"
+              onClick={() => setSplitViewMode(!splitViewMode)}
             >
+              <SplitSquareVertical className="h-4 w-4" />
               Split View
             </Button>
             <Button 
               size="sm" 
               variant="ghost"
-              className="h-8 px-3"
+              className="h-8 px-3 flex items-center gap-1"
+              onClick={() => setFullScreenMode(!fullScreenMode)}
             >
+              <Maximize2 className="h-4 w-4" />
               Full Screen
             </Button>
           </div>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
-          <TabsContent value="code" className="m-0 border-r">
+        <div className={cn("grid", splitViewMode ? "grid-cols-2" : "grid-cols-1")}>
+          <TabsContent value="code" className={cn("m-0", splitViewMode && "border-r")}>
             <div className="p-4">
               <h4 className="font-medium mb-2">CSS Editor</h4>
               <div className="relative">
@@ -115,7 +243,7 @@ export function CustomCSSTab({ settings, onUpdate }: CustomCSSTabProps) {
                 </div>
                 <textarea
                   className="font-mono text-sm w-full h-64 p-2 pl-10 bg-white dark:bg-gray-900 border-0 resize-none focus:outline-none focus:ring-0"
-                  value={settings.customCSS || ''}
+                  value={cssValue}
                   onChange={(e) => updateCustomCSS(e.target.value)}
                   placeholder=".custom-input {
   border-color: #0066cc;
@@ -134,7 +262,7 @@ export function CustomCSSTab({ settings, onUpdate }: CustomCSSTabProps) {
             </div>
           </TabsContent>
           
-          <TabsContent value="visual" className="m-0">
+          <TabsContent value="visual" className={cn("m-0", splitViewMode && "block")}>
             <div className="p-4">
               <h4 className="font-medium mb-4">Visual Property Editor</h4>
               
@@ -255,8 +383,17 @@ export function CustomCSSTab({ settings, onUpdate }: CustomCSSTabProps) {
         </div>
         
         <div className="border-t p-4 bg-gray-50 dark:bg-gray-800 flex justify-end space-x-2">
-          <Button variant="outline">Validate</Button>
-          <Button>Apply Changes</Button>
+          <Button 
+            variant="outline"
+            onClick={validateCSS}
+          >
+            Validate
+          </Button>
+          <Button
+            onClick={applyCustomCSS}
+          >
+            Apply Changes
+          </Button>
         </div>
       </div>
     </div>
