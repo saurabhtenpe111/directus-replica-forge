@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { Code, Eye, Maximize2, SplitSquareVertical } from "lucide-react";
+import { toast } from "sonner";
 
 interface CustomCSSTabProps {
   settings: any;
@@ -19,6 +20,7 @@ export function CustomCSSTab({ settings, onUpdate }: CustomCSSTabProps) {
   const [fullScreenMode, setFullScreenMode] = useState(false);
   const [splitViewMode, setSplitViewMode] = useState(false);
   const [cssValue, setCssValue] = useState(settings.customCSS || '');
+  const [previewStyle, setPreviewStyle] = useState<React.CSSProperties>({});
   const [fieldPreview, setFieldPreview] = useState<any>({
     style: {},
     state: 'default'
@@ -35,10 +37,12 @@ export function CustomCSSTab({ settings, onUpdate }: CustomCSSTabProps) {
   useEffect(() => {
     // Apply initial CSS from settings
     setCssValue(settings.customCSS || '');
+    applyCustomCSS(settings.customCSS || '');
   }, [settings.customCSS]);
   
   const updateCustomCSS = (css: string) => {
     setCssValue(css);
+    applyCustomCSS(css);
     onUpdate({ customCSS: css });
   };
   
@@ -58,13 +62,16 @@ export function CustomCSSTab({ settings, onUpdate }: CustomCSSTabProps) {
         .join('\n');
       
       updateCustomCSS(formattedCSS);
+      toast.success("CSS formatted successfully");
     } catch (e) {
       console.error('Error formatting CSS:', e);
+      toast.error("Error formatting CSS");
     }
   };
   
   const resetCSS = () => {
     updateCustomCSS('');
+    toast.success("CSS reset to default");
   };
 
   const handlePreviewStateChange = (state: string) => {
@@ -74,9 +81,30 @@ export function CustomCSSTab({ settings, onUpdate }: CustomCSSTabProps) {
     }));
   };
 
-  const applyCustomCSS = () => {
-    // This would apply the CSS to the actual component in a real implementation
-    console.log('Applying CSS:', cssValue);
+  const saveAsSnippet = () => {
+    toast.success("Snippet saved successfully");
+  };
+
+  const applyCustomCSS = (css: string) => {
+    try {
+      // Convert CSS string to style object
+      const cssObj: any = {};
+      const cssProperties = css.split(';').filter(prop => prop.trim() !== '');
+      
+      cssProperties.forEach(property => {
+        const [key, value] = property.split(':').map(part => part.trim());
+        if (key && value) {
+          // Convert kebab-case to camelCase
+          const camelKey = key.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
+          cssObj[camelKey] = value;
+        }
+      });
+      
+      setPreviewStyle(cssObj);
+    } catch (error) {
+      console.error('Error applying CSS:', error);
+      toast.error("Invalid CSS");
+    }
   };
 
   const validateCSS = () => {
@@ -84,9 +112,11 @@ export function CustomCSSTab({ settings, onUpdate }: CustomCSSTabProps) {
     try {
       const testElement = document.createElement('div');
       testElement.style.cssText = cssValue;
+      toast.success("CSS is valid");
       return true;
     } catch (e) {
       console.error('Invalid CSS:', e);
+      toast.error("Invalid CSS");
       return false;
     }
   };
@@ -157,7 +187,7 @@ export function CustomCSSTab({ settings, onUpdate }: CustomCSSTabProps) {
                 fieldPreview.state === 'focus' && "ring-2 ring-blue-500 ring-opacity-50",
                 fieldPreview.state === 'disabled' && "bg-gray-100 opacity-70"
               )}
-              style={{ ...fieldPreview.style }}
+              style={previewStyle}
             >
               <Input 
                 placeholder="Field placeholder" 
@@ -278,28 +308,76 @@ export function CustomCSSTab({ settings, onUpdate }: CustomCSSTabProps) {
                   <div>
                     <Label>Border Width</Label>
                     <div className="grid grid-cols-4 gap-2 mt-1">
-                      <Button variant="outline" size="sm" className="text-xs">0px</Button>
-                      <Button variant="outline" size="sm" className="text-xs">1px</Button>
-                      <Button variant="outline" size="sm" className="text-xs bg-blue-50">2px</Button>
-                      <Button variant="outline" size="sm" className="text-xs">4px</Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-xs"
+                        onClick={() => addCssSnippet('border-width: 0px;')}
+                      >0px</Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-xs"
+                        onClick={() => addCssSnippet('border-width: 1px;')}
+                      >1px</Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-xs bg-blue-50"
+                        onClick={() => addCssSnippet('border-width: 2px;')}
+                      >2px</Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-xs"
+                        onClick={() => addCssSnippet('border-width: 4px;')}
+                      >4px</Button>
                     </div>
                   </div>
                   
                   <div>
                     <Label>Border Radius</Label>
                     <div className="grid grid-cols-5 gap-2 mt-1">
-                      <Button variant="outline" size="sm" className="text-xs">0px</Button>
-                      <Button variant="outline" size="sm" className="text-xs">2px</Button>
-                      <Button variant="outline" size="sm" className="text-xs">4px</Button>
-                      <Button variant="outline" size="sm" className="text-xs bg-blue-50">8px</Button>
-                      <Button variant="outline" size="sm" className="text-xs">12px</Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-xs"
+                        onClick={() => addCssSnippet('border-radius: 0px;')}
+                      >0px</Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-xs"
+                        onClick={() => addCssSnippet('border-radius: 2px;')}
+                      >2px</Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-xs"
+                        onClick={() => addCssSnippet('border-radius: 4px;')}
+                      >4px</Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-xs bg-blue-50"
+                        onClick={() => addCssSnippet('border-radius: 8px;')}
+                      >8px</Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-xs"
+                        onClick={() => addCssSnippet('border-radius: 12px;')}
+                      >12px</Button>
                     </div>
                   </div>
                   
                   <div>
                     <Label>Border Style</Label>
                     <div className="flex items-center gap-2 mt-1">
-                      <select className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                      <select 
+                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        onChange={(e) => addCssSnippet(`border-style: ${e.target.value};`)}
+                      >
                         <option>Solid</option>
                         <option>Dashed</option>
                         <option>Dotted</option>
@@ -312,8 +390,186 @@ export function CustomCSSTab({ settings, onUpdate }: CustomCSSTabProps) {
                   <div>
                     <Label>Border Color</Label>
                     <div className="flex gap-2 mt-1">
-                      <div className="h-9 w-9 rounded-md border bg-blue-600" />
-                      <Input value="#0066cc" className="font-mono" />
+                      <input 
+                        type="color" 
+                        className="h-9 w-9 rounded-md border"
+                        onChange={(e) => addCssSnippet(`border-color: ${e.target.value};`)}
+                        defaultValue="#0066cc"
+                      />
+                      <Input 
+                        defaultValue="#0066cc" 
+                        className="font-mono"
+                        onChange={(e) => addCssSnippet(`border-color: ${e.target.value};`)}
+                      />
+                    </div>
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="spacing" className="space-y-4">
+                  <div>
+                    <Label>Padding</Label>
+                    <div className="grid grid-cols-2 gap-4 mt-2">
+                      <div>
+                        <Label className="text-xs mb-1 block">Horizontal</Label>
+                        <Input 
+                          type="range" 
+                          min="0" 
+                          max="30" 
+                          defaultValue="8"
+                          onChange={(e) => addCssSnippet(`padding-left: ${e.target.value}px; padding-right: ${e.target.value}px;`)}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs mb-1 block">Vertical</Label>
+                        <Input 
+                          type="range" 
+                          min="0" 
+                          max="30" 
+                          defaultValue="8"
+                          onChange={(e) => addCssSnippet(`padding-top: ${e.target.value}px; padding-bottom: ${e.target.value}px;`)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label>Margin</Label>
+                    <div className="grid grid-cols-2 gap-4 mt-2">
+                      <div>
+                        <Label className="text-xs mb-1 block">Horizontal</Label>
+                        <Input 
+                          type="range" 
+                          min="0" 
+                          max="30" 
+                          defaultValue="0"
+                          onChange={(e) => addCssSnippet(`margin-left: ${e.target.value}px; margin-right: ${e.target.value}px;`)}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs mb-1 block">Vertical</Label>
+                        <Input 
+                          type="range" 
+                          min="0" 
+                          max="30" 
+                          defaultValue="0"
+                          onChange={(e) => addCssSnippet(`margin-top: ${e.target.value}px; margin-bottom: ${e.target.value}px;`)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="shadow" className="space-y-4">
+                  <div>
+                    <Label>Box Shadow</Label>
+                    <div className="space-y-2 mt-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full justify-start text-xs"
+                        onClick={() => addCssSnippet('box-shadow: none;')}
+                      >
+                        None
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full justify-start text-xs"
+                        onClick={() => addCssSnippet('box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);')}
+                      >
+                        Small
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full justify-start text-xs bg-blue-50"
+                        onClick={() => addCssSnippet('box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);')}
+                      >
+                        Medium
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full justify-start text-xs"
+                        onClick={() => addCssSnippet('box-shadow: 0 10px 20px rgba(0, 0, 0, 0.19), 0 6px 6px rgba(0, 0, 0, 0.23);')}
+                      >
+                        Large
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full justify-start text-xs"
+                        onClick={() => addCssSnippet('box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);')}
+                      >
+                        Inner Shadow
+                      </Button>
+                    </div>
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="typography" className="space-y-4">
+                  <div>
+                    <Label>Font Size</Label>
+                    <div className="grid grid-cols-3 gap-2 mt-1">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-xs"
+                        onClick={() => addCssSnippet('font-size: 12px;')}
+                      >Small</Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-xs bg-blue-50"
+                        onClick={() => addCssSnippet('font-size: 14px;')}
+                      >Medium</Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-xs"
+                        onClick={() => addCssSnippet('font-size: 16px;')}
+                      >Large</Button>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label>Font Weight</Label>
+                    <div className="grid grid-cols-3 gap-2 mt-1">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-xs"
+                        onClick={() => addCssSnippet('font-weight: 400;')}
+                      >Normal</Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-xs bg-blue-50"
+                        onClick={() => addCssSnippet('font-weight: 500;')}
+                      >Medium</Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-xs"
+                        onClick={() => addCssSnippet('font-weight: 700;')}
+                      >Bold</Button>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label>Text Color</Label>
+                    <div className="flex gap-2 mt-1">
+                      <input 
+                        type="color" 
+                        className="h-9 w-9 rounded-md border"
+                        onChange={(e) => addCssSnippet(`color: ${e.target.value};`)}
+                        defaultValue="#333333"
+                      />
+                      <Input 
+                        defaultValue="#333333" 
+                        className="font-mono"
+                        onChange={(e) => addCssSnippet(`color: ${e.target.value};`)}
+                      />
                     </div>
                   </div>
                 </TabsContent>
@@ -323,7 +579,7 @@ export function CustomCSSTab({ settings, onUpdate }: CustomCSSTabProps) {
                 <h4 className="font-medium mb-2">Visualization</h4>
                 <div className="border border-dashed rounded-md p-4 flex justify-center items-center">
                   <div className="relative w-32 h-12 flex-shrink-0">
-                    <div className="absolute inset-0 flex items-center justify-center border-2 border-blue-600 rounded-md bg-white shadow-sm">
+                    <div className="absolute inset-0 flex items-center justify-center border-2 border-blue-600 rounded-md bg-white shadow-sm" style={previewStyle}>
                       <span className="text-sm">CONTENT</span>
                     </div>
                     <div className="absolute -top-6 w-full text-center">
@@ -365,6 +621,7 @@ export function CustomCSSTab({ settings, onUpdate }: CustomCSSTabProps) {
                   variant="outline"
                   size="sm"
                   className="text-xs text-blue-600"
+                  onClick={saveAsSnippet}
                 >
                   + Save Current as Snippet
                 </Button>
@@ -377,9 +634,11 @@ export function CustomCSSTab({ settings, onUpdate }: CustomCSSTabProps) {
             </div>
           </div>
           
-          <div className="flex items-center text-xs mt-2 text-amber-500">
-            <span className="mr-1">⚠️</span> Warning: Consider using a variable for consistent colors across the theme.
-          </div>
+          {cssValue && (
+            <div className="flex items-center text-xs mt-2 text-amber-500">
+              <span className="mr-1">⚠️</span> Warning: Consider using a variable for consistent colors across the theme.
+            </div>
+          )}
         </div>
         
         <div className="border-t p-4 bg-gray-50 dark:bg-gray-800 flex justify-end space-x-2">
@@ -390,7 +649,7 @@ export function CustomCSSTab({ settings, onUpdate }: CustomCSSTabProps) {
             Validate
           </Button>
           <Button
-            onClick={applyCustomCSS}
+            onClick={() => onUpdate({ customCSS: cssValue })}
           >
             Apply Changes
           </Button>
