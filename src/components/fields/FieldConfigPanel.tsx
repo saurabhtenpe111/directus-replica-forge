@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { Button } from '@/components/ui/button';
 import { 
   Form, 
   FormControl, 
@@ -18,6 +18,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { FieldValidationPanel } from './FieldValidationPanel';
 import { FieldAdvancedTab } from './FieldAdvancedTab'; 
+import { FieldAppearancePanel } from './appearance/FieldAppearancePanel';
 import { InputTextField } from './inputs/InputTextField';
 import { NumberInputField } from './inputs/NumberInputField';
 
@@ -195,12 +196,12 @@ export function FieldConfigPanel({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4 mb-6">
-            <TabsTrigger value="general">General</TabsTrigger>
-            <TabsTrigger value="validation">Validation</TabsTrigger>
-            <TabsTrigger value="appearance">Appearance</TabsTrigger>
-            <TabsTrigger value="advanced">Advanced</TabsTrigger>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-4 mb-6 bg-slate-100">
+            <TabsTrigger value="general" className="data-[state=active]:bg-white">General</TabsTrigger>
+            <TabsTrigger value="validation" className="data-[state=active]:bg-white">Validation</TabsTrigger>
+            <TabsTrigger value="appearance" className="data-[state=active]:bg-white">Appearance</TabsTrigger>
+            <TabsTrigger value="advanced" className="data-[state=active]:bg-white">Advanced</TabsTrigger>
           </TabsList>
           
           <TabsContent value="general">
@@ -276,26 +277,16 @@ export function FieldConfigPanel({
           <TabsContent value="validation">
             <FieldValidationPanel 
               fieldType={fieldType}
-              initialData={fieldData?.validation}
+              initialData={validationSettings}
               onUpdate={handleUpdateValidation}
             />
           </TabsContent>
           
           <TabsContent value="appearance">
-            <FieldAdvancedTab
+            <FieldAppearancePanel
               fieldType={fieldType}
-              fieldData={{
-                appearance: appearanceSettings,
-                advanced: advancedSettings
-              }}
-              onUpdate={(data) => {
-                if (data.appearance) {
-                  handleUpdateAppearance(data.appearance);
-                }
-                if (data.advanced) {
-                  handleUpdateAdvanced(data.advanced);
-                }
-              }}
+              initialData={appearanceSettings}
+              onSave={handleUpdateAppearance}
             />
           </TabsContent>
           
@@ -303,13 +294,9 @@ export function FieldConfigPanel({
             <FieldAdvancedTab
               fieldType={fieldType}
               fieldData={{
-                appearance: appearanceSettings,
                 advanced: advancedSettings
               }}
               onUpdate={(data) => {
-                if (data.appearance) {
-                  handleUpdateAppearance(data.appearance);
-                }
                 if (data.advanced) {
                   handleUpdateAdvanced(data.advanced);
                 }
@@ -319,19 +306,21 @@ export function FieldConfigPanel({
         </Tabs>
         
         <div className="flex justify-end space-x-4 mt-6">
-          <button 
+          <Button 
             type="button" 
             onClick={onCancel} 
-            className="px-4 py-2 text-sm border rounded"
+            variant="outline"
+            className="px-4 py-2"
           >
             Cancel
-          </button>
-          <button 
+          </Button>
+          <Button 
             type="submit" 
-            className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+            variant="default"
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700"
           >
             Save Field
-          </button>
+          </Button>
         </div>
       </form>
     </Form>
