@@ -16,8 +16,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { FieldValidationPanel } from './FieldValidationPanel';
-import { FieldAppearancePanel } from './FieldAppearancePanel';
-import { FieldAdvancedPanel } from './FieldAdvancedPanel';
+import { FieldAdvancedTab } from './FieldAdvancedTab'; 
 import { InputTextField } from './inputs/InputTextField';
 import { NumberInputField } from './inputs/NumberInputField';
 
@@ -73,32 +72,14 @@ export function FieldConfigPanel({
 }: FieldConfigPanelProps) {
   const [activeTab, setActiveTab] = useState('general');
   const [validationSettings, setValidationSettings] = useState({});
-  const [appearanceSettings, setAppearanceSettings] = useState({
-    floatLabel: false,
-    filled: false,
-    showButtons: false,
-    buttonLayout: "horizontal" as "horizontal" | "vertical",
-    prefix: '',
-    suffix: ''
-  });
-  const [advancedSettings, setAdvancedSettings] = useState({
-    showButtons: false,
-    buttonLayout: "horizontal" as "horizontal" | "vertical",
-    prefix: '',
-    suffix: ''
-  });
+  const [appearanceSettings, setAppearanceSettings] = useState({});
+  const [advancedSettings, setAdvancedSettings] = useState({});
   
   useEffect(() => {
     if (fieldData) {
       setValidationSettings(fieldData.validation || {});
-      setAppearanceSettings({
-        ...appearanceSettings,
-        ...(fieldData.appearance || {})
-      });
-      setAdvancedSettings({
-        ...advancedSettings,
-        ...(fieldData.advanced || {})
-      });
+      setAppearanceSettings(fieldData.appearance || {});
+      setAdvancedSettings(fieldData.advanced || {});
     }
   }, [fieldData]);
   
@@ -280,19 +261,38 @@ export function FieldConfigPanel({
           </TabsContent>
           
           <TabsContent value="appearance">
-            <FieldAppearancePanel 
-              form={form} 
+            <FieldAdvancedTab
               fieldType={fieldType}
-              initialData={fieldData?.appearance}
-              onUpdate={handleUpdateAppearance}
+              fieldData={{
+                appearance: appearanceSettings,
+                advanced: advancedSettings
+              }}
+              onUpdate={(data) => {
+                if (data.appearance) {
+                  handleUpdateAppearance(data.appearance);
+                }
+                if (data.advanced) {
+                  handleUpdateAdvanced(data.advanced);
+                }
+              }}
             />
           </TabsContent>
           
           <TabsContent value="advanced">
-            <FieldAdvancedPanel 
+            <FieldAdvancedTab
               fieldType={fieldType}
-              initialData={fieldData?.advanced}
-              onSave={handleUpdateAdvanced}
+              fieldData={{
+                appearance: appearanceSettings,
+                advanced: advancedSettings
+              }}
+              onUpdate={(data) => {
+                if (data.appearance) {
+                  handleUpdateAppearance(data.appearance);
+                }
+                if (data.advanced) {
+                  handleUpdateAdvanced(data.advanced);
+                }
+              }}
             />
           </TabsContent>
         </Tabs>
