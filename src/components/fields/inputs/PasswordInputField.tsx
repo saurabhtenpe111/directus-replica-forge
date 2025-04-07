@@ -33,6 +33,11 @@ interface PasswordInputFieldProps {
     focus?: string;
     label?: string;
   };
+  // Add uiVariant prop
+  uiVariant?: "standard" | "material" | "pill" | "borderless" | "underlined";
+  // Add error message prop
+  errorMessage?: string;
+  invalid?: boolean;
 }
 
 export function PasswordInputField({
@@ -54,7 +59,10 @@ export function PasswordInputField({
   fieldSize = "medium",
   labelSize = "medium",
   customClass = "",
-  colors = {}
+  colors = {},
+  uiVariant = "standard",
+  errorMessage,
+  invalid = false
 }: PasswordInputFieldProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [hasFocus, setHasFocus] = useState(false);
@@ -110,81 +118,67 @@ export function PasswordInputField({
     color: colors.text || "#1e293b",
   };
 
+  // Apply UI variant specific styles
+  const variantClasses = uiVariant ? `ui-variant-${uiVariant}` : "";
+
   return (
-    <div className={cn('relative space-y-1', className, customClass)} style={inputContainerStyle}>
-      {label && labelPosition === "top" && !floatLabel && (
-        <Label 
-          htmlFor={id}
-          style={labelStyle}
-          className={required ? "after:content-['*'] after:ml-1 after:text-red-500" : ""}
-        >
-          {label}
-        </Label>
-      )}
-      
-      <div className="relative" style={labelPosition === "left" ? { width: `${100 - labelWidth}%` } : {}}>
-        {label && labelPosition === "left" && (
+    <div className={cn(className, "mb-4", invalid && "has-error")}>
+      <div style={inputContainerStyle}>
+        {label && (
           <Label 
             htmlFor={id}
+            className={cn(
+              labelPosition === "left" && "mr-3",
+              "block"
+            )}
             style={labelStyle}
-            className={required ? "after:content-['*'] after:ml-1 after:text-red-500" : ""}
           >
             {label}
+            {required && <span className="text-red-500 ml-1">*</span>}
           </Label>
         )}
-        
-        {floatLabel && label && (
-          <Label
-            htmlFor={id}
+        <div className={cn("relative", variantClasses)}>
+          <Input
+            type={showPassword ? "text" : "password"}
+            id={id}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder}
+            required={required}
+            onFocus={() => setHasFocus(true)}
+            onBlur={() => setHasFocus(false)}
             className={cn(
-              "absolute transition-all duration-200 pointer-events-none",
-              (hasFocus || value) ? "-top-3 left-2 bg-white px-1 text-xs" : `top-1/2 left-3 -translate-y-1/2`
+              "pr-10",
+              invalid && "border-red-500",
+              customClass
             )}
-            style={{
-              color: hasFocus ? (colors.focus || "#3b82f6") : (colors.label || "#64748b"),
-              zIndex: 10
-            }}
+            style={inputStyle}
+            data-state={hasFocus ? "focused" : ""}
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="absolute right-0 top-0 h-full px-3 py-2"
+            onClick={togglePasswordVisibility}
+            tabIndex={-1}
           >
-            {label}{required && <span className="text-red-500 ml-1">*</span>}
-          </Label>
-        )}
-
-        <Input
-          type={showPassword ? 'text' : 'password'}
-          id={id}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={floatLabel && label ? "" : placeholder}
-          required={required}
-          className={cn(
-            "pr-10",
-            filled && "bg-gray-100",
-            floatLabel && "pt-4"
-          )}
-          onFocus={() => setHasFocus(true)}
-          onBlur={() => setHasFocus(false)}
-          style={inputStyle}
-          aria-describedby={helpText ? `${id}-description` : undefined}
-        />
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="absolute right-0 top-0 h-full px-3 py-0 hover:bg-transparent"
-          onClick={togglePasswordVisibility}
-          tabIndex={-1}
-          aria-label={showPassword ? 'Hide password' : 'Show password'}
-        >
-          {showPassword ? <EyeOffIcon size={18} /> : <EyeIcon size={18} />}
-        </Button>
+            {showPassword ? (
+              <EyeOffIcon className="h-4 w-4 text-gray-400" />
+            ) : (
+              <EyeIcon className="h-4 w-4 text-gray-400" />
+            )}
+          </Button>
+        </div>
       </div>
-      {helpText && (
-        <p id={`${id}-description`} className="text-muted-foreground text-xs">
-          {helpText}
+      {(helpText || errorMessage) && (
+        <p className={cn(
+          "text-sm mt-1", 
+          invalid || errorMessage ? "text-red-500" : "text-gray-500"
+        )}>
+          {invalid || errorMessage ? errorMessage || helpText : helpText}
         </p>
       )}
     </div>
   );
 }
-
-export default PasswordInputField;

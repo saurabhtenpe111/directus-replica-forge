@@ -118,7 +118,7 @@ export const FieldRenderer = ({ field, formData, titleField, onInputChange, erro
           labelSize={labelSize || "medium"}
           customClass={fieldClassName}
           colors={colors}
-          uiVariant={uiVariant} // Use the validated UI variant
+          uiVariant={uiVariant as "standard" | "material" | "pill" | "borderless" | "underlined"}
           errorMessage={hasError ? errorMessage : undefined}
           invalid={hasError}
         />
@@ -151,7 +151,8 @@ export const FieldRenderer = ({ field, formData, titleField, onInputChange, erro
           labelSize={labelSize || "medium"}
           customClass={fieldClassName}
           colors={colors}
-          uiVariant={appearance.uiVariant || 'standard'}
+          uiVariant={uiVariant as "standard" | "material" | "pill" | "borderless" | "underlined"}
+          invalid={hasError}
         />
       );
 
@@ -176,7 +177,9 @@ export const FieldRenderer = ({ field, formData, titleField, onInputChange, erro
           labelSize={labelSize || "medium"}
           customClass={fieldClassName}
           colors={colors}
-          uiVariant={appearance.uiVariant || 'standard'}
+          uiVariant={uiVariant as "standard" | "material" | "pill" | "borderless" | "underlined"}
+          errorMessage={hasError ? errorMessage : undefined}
+          invalid={hasError}
         />
       );
 
