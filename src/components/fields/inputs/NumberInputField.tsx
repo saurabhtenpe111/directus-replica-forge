@@ -1,32 +1,27 @@
 
 import React, { useState } from "react";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ChevronUp, ChevronDown } from "lucide-react";
+import { MinusIcon, PlusIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { validateUIVariant } from "@/utils/inputAdapters";
 
-interface NumberInputFieldProps {
+export interface NumberInputFieldProps {
   id: string;
-  label?: string;
   value: number | null;
   onChange: (value: number | null) => void;
+  label?: string;
+  placeholder?: string;
+  helpText?: string;
   min?: number;
   max?: number;
   step?: number;
-  placeholder?: string;
   required?: boolean;
-  disabled?: boolean;
-  invalid?: boolean;
-  helpText?: string;
-  className?: string;
-  "aria-label"?: string;
   showButtons?: boolean;
   buttonLayout?: "horizontal" | "vertical";
   prefix?: string;
   suffix?: string;
-  locale?: string;
-  currency?: string;
   floatLabel?: boolean;
   filled?: boolean;
   textAlign?: "left" | "center" | "right";
@@ -44,34 +39,29 @@ interface NumberInputFieldProps {
     focus?: string;
     label?: string;
   };
-  // Add uiVariant prop
+  disabled?: boolean;
+  invalid?: boolean;
   uiVariant?: "standard" | "material" | "pill" | "borderless" | "underlined";
 }
 
-export function NumberInputField({
+export const NumberInputField = ({
   id,
-  label,
   value,
   onChange,
+  label,
+  placeholder,
+  helpText,
   min,
   max,
   step = 1,
-  placeholder = "",
   required = false,
-  disabled = false,
-  invalid = false,
-  helpText,
-  className,
-  "aria-label": ariaLabel,
   showButtons = false,
   buttonLayout = "horizontal",
   prefix = "",
   suffix = "",
-  locale,
-  currency,
   floatLabel = false,
   filled = false,
-  textAlign = "left",
+  textAlign = "right",
   labelPosition = "top",
   labelWidth = 30,
   showBorder = true,
@@ -80,62 +70,14 @@ export function NumberInputField({
   labelSize = "medium",
   customClass = "",
   colors = {},
+  disabled = false,
+  invalid = false,
   uiVariant = "standard"
-}: NumberInputFieldProps) {
+}: NumberInputFieldProps) => {
   const [hasFocus, setHasFocus] = useState(false);
   
-  const handleIncrement = () => {
-    if (disabled) return;
-    const currentValue = value ?? 0;
-    const newValue = max !== undefined ? Math.min(currentValue + step, max) : currentValue + step;
-    onChange(newValue);
-  };
-  
-  const handleDecrement = () => {
-    if (disabled) return;
-    const currentValue = value ?? 0;
-    const newValue = min !== undefined ? Math.max(currentValue - step, min) : currentValue - step;
-    onChange(newValue);
-  };
-  
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.value === "") {
-      onChange(null);
-      return;
-    }
-    
-    const newValue = parseFloat(e.target.value);
-    if (isNaN(newValue)) return;
-    
-    let constrainedValue = newValue;
-    if (min !== undefined) constrainedValue = Math.max(constrainedValue, min);
-    if (max !== undefined) constrainedValue = Math.min(constrainedValue, max);
-    
-    onChange(constrainedValue);
-  };
-  
-  // Format the displayed value based on locale and currency options
-  const formatValue = () => {
-    if (value === null || value === undefined) return "";
-    
-    if (currency && locale) {
-      return new Intl.NumberFormat(locale, {
-        style: "currency",
-        currency
-      }).format(value);
-    }
-    
-    if (locale) {
-      return new Intl.NumberFormat(locale).format(value);
-    }
-    
-    return value.toString();
-  };
-  
-  const displayValue = formatValue();
-  
-  // Get input value for the actual input (without formatting)
-  const inputValue = value !== null ? value.toString() : "";
+  // Validate UI variant
+  const validatedUiVariant = validateUIVariant(uiVariant);
 
   // Generate dynamic styles based on props
   const inputContainerStyle: React.CSSProperties = {
@@ -143,15 +85,15 @@ export function NumberInputField({
     alignItems: "center",
     position: "relative"
   };
-  
+
   const labelStyle: React.CSSProperties = {
     width: labelPosition === "left" ? `${labelWidth}%` : "auto",
     fontSize: labelSize === "small" ? "0.875rem" : labelSize === "medium" ? "1rem" : "1.125rem",
     fontWeight: labelSize === "large" ? 600 : 500,
-    color: colors.label || "#64748b",
+    color: colors.label || (invalid ? "#dc2626" : "#64748b"),
     marginBottom: labelPosition === "top" ? "0.5rem" : "0"
   };
-  
+
   // Get border radius based on roundedCorners prop
   const getBorderRadius = () => {
     switch (roundedCorners) {
@@ -162,190 +104,265 @@ export function NumberInputField({
       default: return "0.375rem";
     }
   };
-  
+
   // Get padding based on fieldSize prop
   const getPadding = () => {
-    switch (fieldSize) {
-      case "small": return "0.375rem 0.5rem";
-      case "medium": return "0.5rem 0.75rem";
-      case "large": return "0.75rem 1rem";
-      default: return "0.5rem 0.75rem";
+    const basePadding = fieldSize === "small" ? "0.375rem 0.5rem" : 
+                        fieldSize === "medium" ? "0.5rem 0.75rem" : 
+                        "0.75rem 1rem";
+    
+    // Adjust padding if prefix or suffix exists
+    const prefixPadding = prefix ? (fieldSize === "small" ? "1.5rem" : fieldSize === "medium" ? "1.75rem" : "2rem") : "";
+    const suffixPadding = suffix ? (fieldSize === "small" ? "1.5rem" : fieldSize === "medium" ? "1.75rem" : "2rem") : "";
+    
+    if (prefixPadding && suffixPadding) {
+      return `${basePadding.split(' ')[0]} ${suffixPadding} ${basePadding.split(' ')[0]} ${prefixPadding}`;
+    } else if (prefixPadding) {
+      return `${basePadding.split(' ')[0]} ${basePadding.split(' ')[1]} ${basePadding.split(' ')[0]} ${prefixPadding}`;
+    } else if (suffixPadding) {
+      return `${basePadding.split(' ')[0]} ${suffixPadding} ${basePadding.split(' ')[0]} ${basePadding.split(' ')[1]}`;
     }
+    
+    return basePadding;
   };
-  
-  const inputStyle: React.CSSProperties = {
+
+  // Base input style
+  let inputStyle: React.CSSProperties = {
     width: labelPosition === "left" ? `${100 - labelWidth}%` : "100%",
     backgroundColor: filled ? (colors.background || "#f1f5f9") : "transparent",
-    border: showBorder ? `1px solid ${colors.border || "#e2e8f0"}` : "none",
+    border: showBorder ? `1px solid ${colors.border || (invalid ? "#dc2626" : "#e2e8f0")}` : "none",
     borderRadius: getBorderRadius(),
     padding: getPadding(),
     fontSize: fieldSize === "small" ? "0.875rem" : fieldSize === "medium" ? "1rem" : "1.125rem",
     textAlign: textAlign,
     color: colors.text || "#1e293b",
+    transition: "all 0.2s ease"
   };
 
-  // Apply UI variant specific styles
-  const variantClasses = uiVariant ? `ui-variant-${uiVariant}` : "";
+  // Apply UI variant styles
+  if (validatedUiVariant === 'pill') {
+    inputStyle = {
+      ...inputStyle,
+      borderRadius: '9999px !important',
+      border: `1px solid ${colors.border || (invalid ? "#dc2626" : "#e2e8f0")} !important`,
+    };
+  } else if (validatedUiVariant === 'material') {
+    inputStyle = {
+      ...inputStyle,
+      border: 'none !important',
+      borderBottom: `2px solid ${colors.border || (invalid ? "#dc2626" : "#e2e8f0")} !important`,
+      borderRadius: '0 !important',
+      paddingLeft: prefix ? undefined : '0 !important',
+      paddingRight: suffix ? undefined : '0 !important',
+    };
+  } else if (validatedUiVariant === 'borderless') {
+    inputStyle = {
+      ...inputStyle,
+      border: 'none !important',
+      backgroundColor: `${colors.background || 'rgba(241, 245, 249, 0.7)'} !important`,
+    };
+  } else if (validatedUiVariant === 'underlined') {
+    inputStyle = {
+      ...inputStyle,
+      border: 'none !important',
+      borderBottom: `1px solid ${colors.border || (invalid ? "#dc2626" : "#e2e8f0")} !important`,
+      borderRadius: '0 !important',
+      paddingLeft: prefix ? undefined : '0 !important',
+      paddingRight: suffix ? undefined : '0 !important',
+      backgroundColor: 'transparent !important',
+    };
+  }
+
+  // Handle increment/decrement
+  const incrementValue = () => {
+    if (disabled) return;
+    
+    const currentValue = value === null ? 0 : value;
+    const newValue = currentValue + step;
+    
+    if (max !== undefined && newValue > max) {
+      onChange(max);
+    } else {
+      onChange(newValue);
+    }
+  };
+  
+  const decrementValue = () => {
+    if (disabled) return;
+    
+    const currentValue = value === null ? 0 : value;
+    const newValue = currentValue - step;
+    
+    if (min !== undefined && newValue < min) {
+      onChange(min);
+    } else {
+      onChange(newValue);
+    }
+  };
+  
+  // Handle direct input
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value;
+    
+    if (inputValue === "") {
+      onChange(null);
+      return;
+    }
+    
+    const numValue = parseFloat(inputValue);
+    
+    if (!isNaN(numValue)) {
+      if (min !== undefined && numValue < min) {
+        onChange(min);
+      } else if (max !== undefined && numValue > max) {
+        onChange(max);
+      } else {
+        onChange(numValue);
+      }
+    }
+  };
 
   return (
-    <div className={cn(className, "mb-4", invalid && "has-error")}>
-      <div style={inputContainerStyle}>
-        {label && (
-          <Label 
+    <div 
+      className={cn("space-y-2", customClass, `ui-variant-${validatedUiVariant}`)} 
+      style={inputContainerStyle}
+      data-ui-variant={validatedUiVariant}
+    >
+      {label && !floatLabel && (
+        <Label
+          htmlFor={id}
+          style={labelStyle}
+          className={required ? "after:content-['*'] after:ml-1 after:text-red-600" : ""}
+        >
+          {label}
+        </Label>
+      )}
+      
+      <div
+        className={cn(
+          "relative",
+          floatLabel && "pt-4",
+          showButtons && buttonLayout === "horizontal" && "flex items-stretch"
+        )}
+        style={{ width: labelPosition === "left" ? `${100 - labelWidth}%` : "100%" }}
+      >
+        {floatLabel && label && (
+          <Label
             htmlFor={id}
             className={cn(
-              labelPosition === "left" && "mr-3",
-              "block"
+              "absolute transition-all duration-200 pointer-events-none",
+              (hasFocus || value !== null) ? "-top-3 left-2 bg-white px-1 text-xs" : "top-1/2 left-3 -translate-y-1/2"
             )}
-            style={labelStyle}
+            style={{
+              color: hasFocus ? (colors.focus || "#3b82f6") : (colors.label || "#64748b"),
+              zIndex: 10
+            }}
           >
             {label}
-            {required && <span className="text-red-500 ml-1">*</span>}
           </Label>
         )}
         
-        <div className={cn("relative", variantClasses)}>
-          {/* Button layout for vertical or horizontal arrangement */}
-          {showButtons && buttonLayout === "horizontal" && (
-            <div className="flex">
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                className="h-9 w-9 rounded-r-none"
-                onClick={handleDecrement}
-                disabled={disabled || (min !== undefined && value !== null && value <= min)}
-              >
-                <ChevronDown className="h-4 w-4" />
-              </Button>
-              
-              <div className="relative flex-1">
-                {prefix && (
-                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500">
-                    {prefix}
-                  </span>
-                )}
-                <Input
-                  type="number"
-                  id={id}
-                  value={inputValue}
-                  onChange={handleChange}
-                  placeholder={placeholder}
-                  required={required}
-                  disabled={disabled}
-                  min={min}
-                  max={max}
-                  step={step}
-                  className={cn(
-                    "rounded-none",
-                    prefix && "pl-6",
-                    suffix && "pr-6",
-                    invalid && "border-red-500",
-                    customClass
-                  )}
-                  onFocus={() => setHasFocus(true)}
-                  onBlur={() => setHasFocus(false)}
-                  style={inputStyle}
-                  aria-label={ariaLabel || label}
-                />
-                {suffix && (
-                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500">
-                    {suffix}
-                  </span>
-                )}
-              </div>
-              
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                className="h-9 w-9 rounded-l-none"
-                onClick={handleIncrement}
-                disabled={disabled || (max !== undefined && value !== null && value >= max)}
-              >
-                <ChevronUp className="h-4 w-4" />
-              </Button>
+        {showButtons && buttonLayout === "horizontal" && (
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={decrementValue}
+            disabled={disabled || (min !== undefined && (value === null || value <= min))}
+            className="rounded-r-none"
+          >
+            <MinusIcon className="h-4 w-4" />
+          </Button>
+        )}
+        
+        <div className="relative flex-1">
+          {prefix && (
+            <div 
+              className="absolute inset-y-0 left-0 flex items-center pl-2 text-gray-500"
+              style={{ fontSize: inputStyle.fontSize }}
+            >
+              {prefix}
             </div>
           )}
           
-          {/* Regular input display when not showing horizontal buttons */}
-          {(!showButtons || buttonLayout === "vertical") && (
-            <div className="relative">
-              {prefix && (
-                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500">
-                  {prefix}
-                </span>
-              )}
-              <Input
-                type="number"
-                id={id}
-                value={inputValue}
-                onChange={handleChange}
-                placeholder={placeholder}
-                required={required}
-                disabled={disabled}
-                min={min}
-                max={max}
-                step={step}
-                className={cn(
-                  prefix && "pl-6",
-                  suffix && "pr-6",
-                  showButtons && buttonLayout === "vertical" && "rounded-l-none",
-                  invalid && "border-red-500",
-                  customClass
-                )}
-                onFocus={() => setHasFocus(true)}
-                onBlur={() => setHasFocus(false)}
-                style={inputStyle}
-                aria-label={ariaLabel || label}
-              />
-              {suffix && (
-                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500">
-                  {suffix}
-                </span>
-              )}
+          <Input
+            id={id}
+            type="number"
+            value={value === null ? "" : value.toString()}
+            onChange={handleInputChange}
+            placeholder={floatLabel && label ? "" : placeholder}
+            onFocus={() => setHasFocus(true)}
+            onBlur={() => setHasFocus(false)}
+            min={min}
+            max={max}
+            step={step}
+            required={required}
+            disabled={disabled}
+            style={inputStyle}
+            data-ui-variant={validatedUiVariant}
+            className={cn(
+              "focus:ring-1 focus:ring-offset-0",
+              hasFocus && "outline-none",
+              invalid && "border-red-500 focus:ring-red-500",
+              showButtons && buttonLayout === "horizontal" && "rounded-none",
+              `input-variant-${validatedUiVariant}`
+            )}
+          />
+          
+          {suffix && (
+            <div 
+              className="absolute inset-y-0 right-0 flex items-center pr-2 text-gray-500"
+              style={{ fontSize: inputStyle.fontSize }}
+            >
+              {suffix}
             </div>
           )}
           
-          {/* Vertical buttons layout */}
           {showButtons && buttonLayout === "vertical" && (
-            <div className="inline-flex flex-col">
+            <div className="absolute inset-y-0 right-0 flex flex-col">
               <Button
                 type="button"
-                variant="outline"
+                variant="ghost"
                 size="icon"
-                className="h-5 w-9 rounded-b-none rounded-l-none border-b-0"
-                onClick={handleIncrement}
-                disabled={disabled || (max !== undefined && value !== null && value >= max)}
+                onClick={incrementValue}
+                disabled={disabled || (max !== undefined && (value === null || value >= max))}
+                className="h-1/2 px-1 py-0 rounded-none rounded-tr-md"
               >
-                <ChevronUp className="h-3 w-3" />
+                <PlusIcon className="h-3 w-3" />
               </Button>
               <Button
                 type="button"
-                variant="outline"
+                variant="ghost"
                 size="icon"
-                className="h-5 w-9 rounded-t-none rounded-l-none"
-                onClick={handleDecrement}
-                disabled={disabled || (min !== undefined && value !== null && value <= min)}
+                onClick={decrementValue}
+                disabled={disabled || (min !== undefined && (value === null || value <= min))}
+                className="h-1/2 px-1 py-0 rounded-none rounded-br-md"
               >
-                <ChevronDown className="h-3 w-3" />
+                <MinusIcon className="h-3 w-3" />
               </Button>
             </div>
           )}
         </div>
+        
+        {showButtons && buttonLayout === "horizontal" && (
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={incrementValue}
+            disabled={disabled || (max !== undefined && (value === null || value >= max))}
+            className="rounded-l-none"
+          >
+            <PlusIcon className="h-4 w-4" />
+          </Button>
+        )}
       </div>
-
-      {helpText && (
-        <p className={cn("text-sm mt-1", invalid ? "text-red-500" : "text-gray-500")}>
-          {helpText}
-        </p>
-      )}
       
-      {currency && locale && (
-        <p className="text-xs mt-1 text-gray-500">
-          Formatted: {displayValue}
+      {helpText && (
+        <p className={cn("text-sm", invalid ? "text-red-500" : "text-gray-500")}>
+          {helpText}
         </p>
       )}
     </div>
   );
-}
+};
