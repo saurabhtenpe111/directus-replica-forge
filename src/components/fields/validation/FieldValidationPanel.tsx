@@ -1,407 +1,551 @@
 
-import React from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import React, { useState, useEffect } from 'react';
+import { ValidationSettings } from '@/services/CollectionService';
 import { Card, CardContent } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { ArrowRight, Check } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Check, AlertCircle } from 'lucide-react';
+import { FormItem, FormLabel, FormControl, FormDescription } from '@/components/ui/form';
+import { adaptInputChangeEvent } from '@/utils/inputAdapters';
 
 interface FieldValidationPanelProps {
-  initialData?: any;
-  onSave?: (data: any) => void;
+  fieldType: string | null;
+  initialData: ValidationSettings;
+  onUpdate: (data: ValidationSettings) => void;
 }
 
-export function FieldValidationPanel({ initialData = {}, onSave }: FieldValidationPanelProps) {
-  const [activeTab, setActiveTab] = React.useState('basic-validation');
-  
-  // Extract validation settings from initial data or use empty object
-  const validationSettings = initialData?.validation || {};
-  
-  const [required, setRequired] = React.useState(initialData?.required || false);
-  
-  // Basic validation state
-  const [minLengthEnabled, setMinLengthEnabled] = React.useState(validationSettings?.minLengthEnabled || false);
-  const [minLength, setMinLength] = React.useState(validationSettings?.minLength || '');
-  const [maxLengthEnabled, setMaxLengthEnabled] = React.useState(validationSettings?.maxLengthEnabled || false);
-  const [maxLength, setMaxLength] = React.useState(validationSettings?.maxLength || '');
-  
-  // Pattern validation state
-  const [patternEnabled, setPatternEnabled] = React.useState(validationSettings?.patternEnabled || false);
-  const [pattern, setPattern] = React.useState(validationSettings?.pattern || '');
-  const [patternMessage, setPatternMessage] = React.useState(validationSettings?.message || '');
-  
-  // Custom validation state
-  const [customValidationEnabled, setCustomValidationEnabled] = React.useState(validationSettings?.customValidationEnabled || false);
-  const [customValidation, setCustomValidation] = React.useState(validationSettings?.customValidation || '(value) => {\n  // Return true if valid, false if invalid\n  return true;\n}');
-  const [customMessage, setCustomMessage] = React.useState(validationSettings?.customMessage || '');
-  
-  const [isSaving, setIsSaving] = React.useState(false);
-  
-  // Predefined validation patterns
-  const validationPatterns = [
-    {
-      name: 'Email',
-      pattern: '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$',
-      description: 'Validates email addresses'
-    },
-    {
-      name: 'URL',
-      pattern: '^(https?:\\/\\/)?([\\da-z.-]+)\\.([a-z.]{2,6})([\\/\\w.-]*)*\\/?$',
-      description: 'Validates URLs (with or without http/https)'
-    },
-    {
-      name: 'Phone Number',
-      pattern: '^[+]?[(]?[0-9]{3}[)]?[-\\s.]?[0-9]{3}[-\\s.]?[0-9]{4,6}$',
-      description: 'Validates phone numbers in common formats'
-    },
-    {
-      name: 'Zip/Postal Code',
-      pattern: '^[0-9]{5}(?:-[0-9]{4})?$',
-      description: 'US postal codes with optional 4-digit extension'
-    },
-    {
-      name: 'Credit Card',
-      pattern: '^(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14}|6(?:011|5[0-9][0-9])[0-9]{12}|3[47][0-9]{13}|3(?:0[0-5]|[68][0-9])[0-9]{11}|(?:2131|1800|35\\d{3})\\d{11})$',
-      description: 'Validates common credit card formats'
-    },
-    {
-      name: 'Date (YYYY-MM-DD)',
-      pattern: '^\\d{4}-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])$',
-      description: 'Validates ISO date format'
+export function FieldValidationPanel({
+  fieldType,
+  initialData,
+  onUpdate
+}: FieldValidationPanelProps) {
+  const [settings, setSettings] = useState<ValidationSettings>(initialData || {});
+  const [activeTab, setActiveTab] = useState('rules');
+
+  // Add state for enabling/disabling validation types
+  const [minLengthEnabled, setMinLengthEnabled] = useState(initialData?.minLengthEnabled || false);
+  const [maxLengthEnabled, setMaxLengthEnabled] = useState(initialData?.maxLengthEnabled || false);
+  const [patternEnabled, setPatternEnabled] = useState(initialData?.patternEnabled || false);
+  const [customValidationEnabled, setCustomValidationEnabled] = useState(initialData?.customValidationEnabled || false);
+  const [customValidation, setCustomValidation] = useState(initialData?.customValidation || '(value) => { return value.length > 0; }');
+
+  // Live Testing state
+  const [testValue, setTestValue] = useState('');
+  const [validationResult, setValidationResult] = useState<'valid' | 'invalid' | null>(null);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+
+  useEffect(() => {
+    const updatedSettings = initialData || {};
+    setSettings(updatedSettings);
+    setMinLengthEnabled(updatedSettings.minLengthEnabled || false);
+    setMaxLengthEnabled(updatedSettings.maxLengthEnabled || false);
+    setPatternEnabled(updatedSettings.patternEnabled || false);
+    setCustomValidationEnabled(updatedSettings.customValidationEnabled || false);
+    setCustomValidation(updatedSettings.customValidation || '(value) => { return value.length > 0; }');
+  }, [initialData, fieldType]);
+
+  const updateSetting = (key: string, value: any) => {
+    const newSettings = { ...settings, [key]: value };
+    setSettings(newSettings);
+    onUpdate(newSettings);
+  };
+
+  const handleRequiredChange = (checked: boolean) => {
+    updateSetting('required', checked);
+  };
+
+  const handleMinLengthEnabledChange = (checked: boolean) => {
+    setMinLengthEnabled(checked);
+    updateSetting('minLengthEnabled', checked);
+  };
+
+  const handleMaxLengthEnabledChange = (checked: boolean) => {
+    setMaxLengthEnabled(checked);
+    updateSetting('maxLengthEnabled', checked);
+  };
+
+  const handlePatternEnabledChange = (checked: boolean) => {
+    setPatternEnabled(checked);
+    updateSetting('patternEnabled', checked);
+  };
+
+  const renderTextValidation = () => (
+    <>
+      {/* Minimum Length Validation */}
+      <div className="border-b py-4">
+        <div className="flex flex-row items-center justify-between mb-2">
+          <div>
+            <h3 className="text-base font-medium">Minimum Length</h3>
+            <p className="text-sm text-gray-500">Set a minimum number of characters</p>
+          </div>
+          <Switch
+            checked={minLengthEnabled}
+            onCheckedChange={handleMinLengthEnabledChange}
+          />
+        </div>
+
+        {minLengthEnabled && (
+          <div className="mt-2">
+            <Input
+              type="number"
+              min={0}
+              value={settings.minLength || ''}
+              onChange={(e) => updateSetting('minLength', parseInt(e.target.value) || 0)}
+              placeholder="0"
+              className="w-full"
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Maximum Length Validation */}
+      <div className="border-b py-4">
+        <div className="flex flex-row items-center justify-between mb-2">
+          <div>
+            <h3 className="text-base font-medium">Maximum Length</h3>
+            <p className="text-sm text-gray-500">Set a maximum number of characters</p>
+          </div>
+          <Switch
+            checked={maxLengthEnabled}
+            onCheckedChange={handleMaxLengthEnabledChange}
+          />
+        </div>
+
+        {maxLengthEnabled && (
+          <div className="mt-2">
+            <Input
+              type="number"
+              min={1}
+              value={settings.maxLength || ''}
+              onChange={(e) => updateSetting('maxLength', parseInt(e.target.value) || 100)}
+              placeholder="100"
+              className="w-full"
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Pattern Matching Validation */}
+      <div className="border-b py-4">
+        <div className="flex flex-row items-center justify-between mb-2">
+          <div>
+            <h3 className="text-base font-medium">Pattern Matching</h3>
+            <p className="text-sm text-gray-500">Validate using a regular expression</p>
+          </div>
+          <Switch
+            checked={patternEnabled}
+            onCheckedChange={handlePatternEnabledChange}
+          />
+        </div>
+
+        {patternEnabled && (
+          <div className="mt-2">
+            <Input
+              placeholder="e.g. ^[a-zA-Z0-9]+$"
+              value={settings.pattern || ''}
+              onChange={adaptInputChangeEvent((value) => updateSetting('pattern', value))}
+              className="w-full"
+            />
+          </div>
+        )}
+      </div>
+    </>
+  );
+
+  const renderNumberValidation = () => (
+    <div className="grid grid-cols-2 gap-4">
+      <FormItem>
+        <FormLabel>Min Value</FormLabel>
+        <FormControl>
+          <Input
+            type="number"
+            value={settings.min ?? ''}
+            onChange={(e) => updateSetting('min', e.target.value ? parseFloat(e.target.value) : null)}
+          />
+        </FormControl>
+        <FormDescription>
+          Minimum allowed value
+        </FormDescription>
+      </FormItem>
+
+      <FormItem>
+        <FormLabel>Max Value</FormLabel>
+        <FormControl>
+          <Input
+            type="number"
+            value={settings.max ?? ''}
+            onChange={(e) => updateSetting('max', e.target.value ? parseFloat(e.target.value) : null)}
+          />
+        </FormControl>
+        <FormDescription>
+          Maximum allowed value
+        </FormDescription>
+      </FormItem>
+    </div>
+  );
+
+  const renderEmailValidation = () => (
+    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+      <div className="space-y-0.5">
+        <FormLabel>Email Validation</FormLabel>
+        <FormDescription>
+          Validate that input is a valid email address
+        </FormDescription>
+      </div>
+      <FormControl>
+        <Switch
+          checked={settings.email === true}
+          onCheckedChange={(checked) => updateSetting('email', checked)}
+        />
+      </FormControl>
+    </FormItem>
+  );
+
+  const renderUrlValidation = () => (
+    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+      <div className="space-y-0.5">
+        <FormLabel>URL Validation</FormLabel>
+        <FormDescription>
+          Validate that input is a valid URL
+        </FormDescription>
+      </div>
+      <FormControl>
+        <Switch
+          checked={settings.url === true}
+          onCheckedChange={(checked) => updateSetting('url', checked)}
+        />
+      </FormControl>
+    </FormItem>
+  );
+
+  const renderUniqueValidation = () => (
+    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+      <div className="space-y-0.5">
+        <FormLabel>Unique Value</FormLabel>
+        <FormDescription>
+          Field value must be unique across all entries
+        </FormDescription>
+      </div>
+      <FormControl>
+        <Switch
+          checked={settings.unique === true}
+          onCheckedChange={(checked) => updateSetting('unique', checked)}
+        />
+      </FormControl>
+    </FormItem>
+  );
+
+  const renderCustomErrorMessage = () => (
+    <div className="py-4">
+      <div className="mb-2">
+        <h3 className="text-base font-medium">Custom Error Message</h3>
+        <p className="text-sm text-gray-500">Message to display when validation fails</p>
+      </div>
+      <Textarea
+        placeholder="Enter a custom error message to display when validation fails"
+        value={settings.message || ''}
+        onChange={adaptInputChangeEvent((value) => updateSetting('message', value))}
+        className="w-full resize-y"
+      />
+    </div>
+  );
+
+  const renderFieldTypeValidation = () => {
+    // Show all validation options for all field types
+    if (!fieldType) {
+      return (
+        <div className="py-4 text-center text-gray-500">
+          <p>Please select a field to configure validation.</p>
+        </div>
+      );
     }
-  ];
-  
-  // Sample validation functions
-  const validationFunctions = [
-    {
-      name: 'Range Check',
-      function: '(value) => {\n  const num = parseFloat(value);\n  return !isNaN(num) && num >= 0 && num <= 100;\n}',
-      description: 'Check if number is between 0 and 100'
-    },
-    {
-      name: 'Password Strength',
-      function: '(value) => {\n  return value.length >= 8 && \n    /[A-Z]/.test(value) && \n    /[a-z]/.test(value) && \n    /[0-9]/.test(value) && \n    /[^A-Za-z0-9]/.test(value);\n}',
-      description: 'Strong password with multiple requirements'
-    },
-    {
-      name: 'Word Count',
-      function: '(value) => {\n  const words = value.trim().split(/\\s+/);\n  return words.length >= 5 && words.length <= 100;\n}',
-      description: 'Check if text has between 5-100 words'
-    },
-    {
-      name: 'Future Date',
-      function: '(value) => {\n  const inputDate = new Date(value);\n  const today = new Date();\n  return inputDate > today;\n}',
-      description: 'Check if date is in the future'
+
+    // Render field-specific validation options first, then common validation options
+    return (
+      <>
+        {/* Field-specific validation options */}
+        {fieldType === 'email' && renderEmailValidation()}
+        {fieldType === 'url' && renderUrlValidation()}
+        {fieldType === 'number' && renderNumberValidation()}
+        {fieldType === 'tags' && (
+          <FormItem>
+            <FormLabel>Max Tags</FormLabel>
+            <FormControl>
+              <Input
+                type="number"
+                min={0}
+                value={settings.maxTags || ''}
+                onChange={(e) => updateSetting('maxTags', parseInt(e.target.value) || null)}
+              />
+            </FormControl>
+            <FormDescription>
+              Maximum number of tags allowed
+            </FormDescription>
+          </FormItem>
+        )}
+
+        {/* Common validation options for all field types */}
+        {renderTextValidation()}
+      </>
+    );
+  };
+
+  const handleCustomValidationEnabledChange = (checked: boolean) => {
+    setCustomValidationEnabled(checked);
+    updateSetting('customValidationEnabled', checked);
+  };
+
+  const handleCustomValidationChange = (value: string) => {
+    setCustomValidation(value);
+    updateSetting('customValidation', value);
+  };
+
+  const testValidation = () => {
+    const errors: string[] = [];
+    let isValid = true;
+
+    // Test required
+    if (settings.required && !testValue.trim()) {
+      errors.push("This field is required");
+      isValid = false;
     }
-  ];
-  
-  const handleSave = () => {
-    setIsSaving(true);
-    
-    try {
-      // Compile validation data
-      const validationData = {
-        // Basic validation
-        minLengthEnabled,
-        minLength: minLengthEnabled ? parseInt(minLength.toString(), 10) : undefined,
-        maxLengthEnabled,
-        maxLength: maxLengthEnabled ? parseInt(maxLength.toString(), 10) : undefined,
-        
-        // Pattern validation
-        patternEnabled,
-        pattern: patternEnabled ? pattern : undefined,
-        message: patternEnabled ? patternMessage : undefined,
-        
-        // Custom validation
-        customValidationEnabled,
-        customValidation: customValidationEnabled ? customValidation : undefined,
-        customMessage: customValidationEnabled ? customMessage : undefined
-      };
-      
-      // Prepare data for saving
-      const dataToSave = {
-        ...initialData,
-        required,
-        validation: validationData
-      };
-      
-      if (onSave) {
-        onSave(dataToSave);
+
+    // Test min length
+    if (minLengthEnabled && settings.minLength && testValue.length < settings.minLength) {
+      errors.push(`Value must be at least ${settings.minLength} characters`);
+      isValid = false;
+    }
+
+    // Test max length
+    if (maxLengthEnabled && settings.maxLength && testValue.length > settings.maxLength) {
+      errors.push(`Value cannot exceed ${settings.maxLength} characters`);
+      isValid = false;
+    }
+
+    // Test pattern
+    if (patternEnabled && settings.pattern && !new RegExp(settings.pattern).test(testValue)) {
+      errors.push(settings.message || `Value must match pattern: ${settings.pattern}`);
+      isValid = false;
+    }
+
+    // Test custom validation
+    if (customValidationEnabled && customValidation) {
+      try {
+        // Execute custom validation code safely
+        const validateFn = new Function('value', `return (${customValidation})(value)`);
+        const customResult = validateFn(testValue);
+
+        if (customResult !== true) {
+          errors.push(settings.message || "Failed custom validation");
+          isValid = false;
+        }
+      } catch (error) {
+        errors.push(`Error in custom validation: ${error}`);
+        isValid = false;
       }
-      
-      toast({
-        title: "Validation settings saved",
-        description: "Your field validation settings have been updated",
-      });
-    } catch (error) {
-      console.error("Failed to save validation settings:", error);
-      toast({
-        variant: "destructive",
-        title: "Save failed",
-        description: "There was an error saving your validation settings",
-      });
-    } finally {
-      setIsSaving(false);
     }
+
+    setValidationResult(isValid ? 'valid' : 'invalid');
+    setValidationErrors(errors);
   };
-  
-  const applyValidationPattern = (pattern: string) => {
-    setPattern(pattern);
-    setPatternEnabled(true);
+
+  const renderValidationStatus = () => {
+    if (validationResult === null) {
+      return null;
+    }
+
+    if (validationResult === 'valid') {
+      return (
+        <Alert className="bg-green-50 border-green-200 mt-4">
+          <Check className="h-4 w-4 text-green-500" />
+          <AlertTitle className="text-green-700">Validation Passed</AlertTitle>
+          <AlertDescription className="text-green-600">
+            The input value passes all validation rules.
+          </AlertDescription>
+        </Alert>
+      );
+    }
+
+    return (
+      <Alert className="bg-red-50 border-red-200 mt-4">
+        <AlertCircle className="h-4 w-4 text-red-500" />
+        <AlertTitle className="text-red-700">Validation Failed</AlertTitle>
+        <AlertDescription className="text-red-600">
+          <ul className="list-disc pl-5 mt-2">
+            {validationErrors.map((error, index) => (
+              <li key={index}>{error}</li>
+            ))}
+          </ul>
+        </AlertDescription>
+      </Alert>
+    );
   };
-  
-  const applyValidationFunction = (func: string) => {
-    setCustomValidation(func);
-    setCustomValidationEnabled(true);
-  };
-  
-  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setCustomValidation(e.target.value);
-  };
-  
+
+  const renderCustomValidation = () => (
+    <div className="border-b py-4">
+      <div className="flex flex-row items-center justify-between mb-2">
+        <div>
+          <h3 className="text-base font-medium">Custom Validation</h3>
+          <p className="text-sm text-gray-500">Create a custom validation rule</p>
+        </div>
+        <Switch
+          checked={customValidationEnabled}
+          onCheckedChange={handleCustomValidationEnabledChange}
+        />
+      </div>
+
+      {customValidationEnabled && (
+        <div className="mt-2">
+          <Textarea
+            value={customValidation}
+            onChange={(e) => handleCustomValidationChange(e.target.value)}
+            placeholder="(value) => { return value.length > 0; }"
+            className="w-full h-24"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Use JavaScript to define a validation function that returns true if valid or false if invalid
+          </p>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-medium">Field Validation</h2>
-      <p className="text-gray-500">
-        Configure validation rules to ensure data quality
-      </p>
-      
-      <div className="flex items-center space-x-2 pb-2">
-        <Switch 
-          id="required-field"
-          checked={required}
-          onCheckedChange={setRequired}
-        />
-        <Label htmlFor="required-field">This field is required</Label>
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-medium">Field Validation Rules</h3>
+        <p className="text-sm text-gray-500">Configure validation rules for your field</p>
       </div>
-      
-      <div className="space-y-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="basic-validation">Basic Validation</TabsTrigger>
-            <TabsTrigger value="pattern-validation">Pattern Validation</TabsTrigger>
-            <TabsTrigger value="custom-validation">Custom Validation</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="basic-validation">
-            <Card>
-              <CardContent className="pt-6">
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <Switch 
-                      id="min-length"
-                      checked={minLengthEnabled}
-                      onCheckedChange={setMinLengthEnabled}
-                    />
-                    <Label htmlFor="min-length">Enforce minimum length</Label>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-3 mb-6 bg-gray-100">
+          <TabsTrigger value="rules" className="data-[state=active]:bg-white">Validation Rules</TabsTrigger>
+          <TabsTrigger value="testing" className="data-[state=active]:bg-white">Live Testing</TabsTrigger>
+          <TabsTrigger value="accessibility" className="data-[state=active]:bg-white">Accessibility</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="rules" className="space-y-4">
+          <Card>
+            <CardContent className="pt-6 space-y-4">
+              <div className="border-b py-4">
+                <div className="flex flex-row items-center justify-between mb-2">
+                  <div>
+                    <h3 className="text-base font-medium">Required Field</h3>
+                    <p className="text-sm text-gray-500">Make this field mandatory for content creation</p>
                   </div>
-                  
-                  {minLengthEnabled && (
-                    <div className="pl-6 space-y-2">
-                      <Label htmlFor="min-length-value">Minimum characters</Label>
-                      <Input
-                        id="min-length-value"
-                        type="number"
-                        min="1"
-                        value={minLength}
-                        onChange={(e) => setMinLength(e.target.value)}
-                        placeholder="1"
-                        className="max-w-xs"
-                      />
-                    </div>
-                  )}
-                  
-                  <div className="flex items-center space-x-2 mt-4">
-                    <Switch 
-                      id="max-length"
-                      checked={maxLengthEnabled}
-                      onCheckedChange={setMaxLengthEnabled}
-                    />
-                    <Label htmlFor="max-length">Enforce maximum length</Label>
-                  </div>
-                  
-                  {maxLengthEnabled && (
-                    <div className="pl-6 space-y-2">
-                      <Label htmlFor="max-length-value">Maximum characters</Label>
-                      <Input
-                        id="max-length-value"
-                        type="number"
-                        min="1"
-                        value={maxLength}
-                        onChange={(e) => setMaxLength(e.target.value)}
-                        placeholder="255"
-                        className="max-w-xs"
-                      />
-                    </div>
-                  )}
+                  <Switch
+                    checked={settings.required === true}
+                    onCheckedChange={handleRequiredChange}
+                  />
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="pattern-validation">
-            <Card>
-              <CardContent className="pt-6">
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <Switch 
-                      id="pattern-enabled"
-                      checked={patternEnabled}
-                      onCheckedChange={setPatternEnabled}
+              </div>
+
+              {renderUniqueValidation()}
+              {renderFieldTypeValidation()}
+              {renderCustomValidation()}
+              {renderCustomErrorMessage()}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="testing" className="space-y-4">
+          <Card className="border rounded-md">
+            <CardContent className="p-4 space-y-4">
+              <h3 className="text-base font-medium">Test your validation rules</h3>
+              <p className="text-sm text-gray-500">Enter test data to see if it passes your validation rules</p>
+
+              <div className="space-y-4">
+                <FormItem>
+                  <FormLabel>Test Value</FormLabel>
+                  <FormControl>
+                    <Input
+                      value={testValue}
+                      onChange={(e) => setTestValue(e.target.value)}
+                      placeholder="Enter a value to test"
                     />
-                    <Label htmlFor="pattern-enabled">Enable pattern validation</Label>
-                  </div>
-                  
-                  {patternEnabled && (
-                    <div className="pl-6 space-y-4">
-                      <div>
-                        <Label htmlFor="regex-pattern">Regular expression pattern</Label>
-                        <Input
-                          id="regex-pattern"
-                          value={pattern}
-                          onChange={(e) => setPattern(e.target.value)}
-                          placeholder="^[a-zA-Z0-9]+$"
-                          className="font-mono mt-2"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                          Enter a regular expression to validate the input
-                        </p>
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="pattern-message">Error message</Label>
-                        <Input
-                          id="pattern-message"
-                          value={patternMessage}
-                          onChange={(e) => setPatternMessage(e.target.value)}
-                          placeholder="Please enter a valid value"
-                          className="mt-2"
-                        />
-                      </div>
-                      
-                      <div className="mt-6">
-                        <h4 className="text-sm font-medium mb-2">Common validation patterns</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                          {validationPatterns.map((item, index) => (
-                            <div key={index} className="border rounded-md p-2">
-                              <div className="flex justify-between items-start">
-                                <div>
-                                  <h5 className="text-sm font-medium">{item.name}</h5>
-                                  <p className="text-xs text-gray-500 mt-1">{item.description}</p>
-                                </div>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  onClick={() => applyValidationPattern(item.pattern)}
-                                >
-                                  <ArrowRight className="h-4 w-4" />
-                                </Button>
-                              </div>
-                              <p className="text-xs font-mono mt-2 text-gray-600 truncate" title={item.pattern}>
-                                {item.pattern}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                  </FormControl>
+                </FormItem>
+
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium">Current Validation Rules:</h4>
+                  <ul className="text-sm text-gray-500 list-disc pl-5 space-y-1">
+                    {settings.required && (
+                      <li>Required field</li>
+                    )}
+                    {minLengthEnabled && settings.minLength && (
+                      <li>Minimum length: {settings.minLength} characters</li>
+                    )}
+                    {maxLengthEnabled && settings.maxLength && (
+                      <li>Maximum length: {settings.maxLength} characters</li>
+                    )}
+                    {patternEnabled && settings.pattern && (
+                      <li>Pattern: {settings.pattern}</li>
+                    )}
+                    {customValidationEnabled && customValidation && (
+                      <li>Custom validation: (custom function)</li>
+                    )}
+                    {!settings.required && !minLengthEnabled && !maxLengthEnabled && !patternEnabled && !customValidationEnabled && (
+                      <li>No validation rules configured</li>
+                    )}
+                  </ul>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="custom-validation">
-            <Card>
-              <CardContent className="pt-6">
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <Switch 
-                      id="custom-validation-enabled"
-                      checked={customValidationEnabled}
-                      onCheckedChange={setCustomValidationEnabled}
+
+                <Button
+                  onClick={testValidation}
+                  className="w-full"
+                  variant="secondary"
+                >
+                  Test Validation
+                </Button>
+
+                {renderValidationStatus()}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="accessibility" className="space-y-4">
+          <Card className="border rounded-md">
+            <CardContent className="p-4">
+              <h3 className="text-base font-medium mb-4">Accessibility Settings</h3>
+              <p className="text-sm text-gray-500 mb-4">Configure accessibility attributes for this field</p>
+
+              <div className="space-y-4">
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                  <div className="space-y-0.5">
+                    <FormLabel>ARIA Required</FormLabel>
+                    <FormDescription>
+                      Add aria-required attribute
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={settings.ariaRequired === true}
+                      onCheckedChange={(checked) => updateSetting('ariaRequired', checked)}
                     />
-                    <Label htmlFor="custom-validation-enabled">Enable custom validation</Label>
-                  </div>
-                  
-                  {customValidationEnabled && (
-                    <div className="pl-6 space-y-4">
-                      <div>
-                        <Label htmlFor="custom-validation-function">Validation function</Label>
-                        <Textarea
-                          id="custom-validation-function"
-                          value={customValidation}
-                          onChange={handleTextareaChange}
-                          rows={6}
-                          className="font-mono mt-2"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                          Write a function that takes a value and returns true (valid) or false (invalid)
-                        </p>
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="custom-message">Error message</Label>
-                        <Input
-                          id="custom-message"
-                          value={customMessage}
-                          onChange={(e) => setCustomMessage(e.target.value)}
-                          placeholder="Please enter a valid value"
-                          className="mt-2"
-                        />
-                      </div>
-                      
-                      <div className="mt-6">
-                        <h4 className="text-sm font-medium mb-2">Example validation functions</h4>
-                        <div className="grid grid-cols-1 gap-2">
-                          {validationFunctions.map((item, index) => (
-                            <div key={index} className="border rounded-md p-2">
-                              <div className="flex justify-between items-start">
-                                <div>
-                                  <h5 className="text-sm font-medium">{item.name}</h5>
-                                  <p className="text-xs text-gray-500 mt-1">{item.description}</p>
-                                </div>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  onClick={() => applyValidationFunction(item.function)}
-                                >
-                                  <ArrowRight className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-      
-      <div className="flex justify-end">
-        <Button 
-          onClick={handleSave} 
-          disabled={isSaving}
-          className="bg-blue-600 hover:bg-blue-700"
-        >
-          {isSaving ? (
-            <>Saving...</>
-          ) : (
-            <>
-              <Check className="mr-2 h-4 w-4" />
-              Save Validation Settings
-            </>
-          )}
-        </Button>
-      </div>
+                  </FormControl>
+                </FormItem>
+
+                <FormItem>
+                  <FormLabel>ARIA Label</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Accessible label for screen readers"
+                      value={settings.ariaLabel || ''}
+                      onChange={adaptInputChangeEvent((value) => updateSetting('ariaLabel', value))}
+                    />
+                  </FormControl>
+                </FormItem>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

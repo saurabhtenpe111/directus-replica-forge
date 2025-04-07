@@ -54,7 +54,7 @@ export const FieldRenderer = ({ field, formData, titleField, onInputChange, erro
   console.log(`Appearance settings for field ${fieldName}:`, JSON.stringify(appearance, null, 2));
 
   // Log UI variant specifically and ensure it's valid
-  let uiVariant: 'standard' | 'material' | 'pill' | 'borderless' | 'underlined' = 'standard';
+  let uiVariant = 'standard';
   
   if (appearance.uiVariant) {
     uiVariant = validateUIVariant(appearance.uiVariant);
@@ -118,7 +118,7 @@ export const FieldRenderer = ({ field, formData, titleField, onInputChange, erro
           labelSize={labelSize || "medium"}
           customClass={fieldClassName}
           colors={colors}
-          uiVariant={uiVariant}
+          uiVariant={uiVariant} // Use the validated UI variant
           errorMessage={hasError ? errorMessage : undefined}
           invalid={hasError}
         />
@@ -151,6 +151,7 @@ export const FieldRenderer = ({ field, formData, titleField, onInputChange, erro
           labelSize={labelSize || "medium"}
           customClass={fieldClassName}
           colors={colors}
+          uiVariant={appearance.uiVariant || 'standard'}
         />
       );
 
@@ -175,6 +176,7 @@ export const FieldRenderer = ({ field, formData, titleField, onInputChange, erro
           labelSize={labelSize || "medium"}
           customClass={fieldClassName}
           colors={colors}
+          uiVariant={appearance.uiVariant || 'standard'}
         />
       );
 
