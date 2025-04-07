@@ -1,7 +1,7 @@
 
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent } from '@/components/ui/card';
-import { ComponentsPanel } from '@/components/components/ComponentsPanel';
+import ComponentsPanel from '@/components/components/ComponentsPanel';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FieldLayoutPanel } from '@/components/fields/FieldLayoutPanel';
 import { useState } from 'react';
