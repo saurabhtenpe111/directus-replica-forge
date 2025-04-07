@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { SaveIcon, FileJson, Copy, Code, AlertCircle } from 'lucide-react';
 import { FieldRenderer } from './FieldRenderer';
@@ -338,7 +338,7 @@ export function CollectionPreviewForm({
       </Card>
 
       <Dialog open={jsonViewOpen} onOpenChange={setJsonViewOpen}>
-        <DialogContent className="sm:max-w-[800px]">
+        <DialogContent className="sm:max-w-[800px]" hideCloseButton={false}>
           <DialogHeader>
             <DialogTitle>Collection JSON Preview</DialogTitle>
             <DialogDescription>

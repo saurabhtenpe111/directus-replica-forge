@@ -23,13 +23,14 @@ export function adaptInputChangeEvent(setter: (value: string) => void) {
  * @param variant - The UI variant string to validate
  * @returns A valid UI variant string
  */
-export function validateUIVariant(variant: string | undefined): string {
-  const validVariants = ['standard', 'material', 'pill', 'borderless', 'underlined'];
+export function validateUIVariant(variant: string | undefined): 'standard' | 'material' | 'pill' | 'borderless' | 'underlined' {
+  const validVariants = ['standard', 'material', 'pill', 'borderless', 'underlined'] as const;
   
-  if (!variant || !validVariants.includes(variant.toLowerCase())) {
+  if (!variant || !validVariants.includes(variant.toLowerCase() as any)) {
     console.log(`Invalid UI variant provided: ${variant}, defaulting to 'standard'`);
     return 'standard';
   }
   
-  return variant.toLowerCase();
+  return variant.toLowerCase() as 'standard' | 'material' | 'pill' | 'borderless' | 'underlined';
 }
+

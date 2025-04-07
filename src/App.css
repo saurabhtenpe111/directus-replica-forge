@@ -1,4 +1,5 @@
 
+
 .logo {
   height: 6em;
   padding: 1.5em;
@@ -99,3 +100,45 @@
 .has-error .ui-variant-underlined input {
   border-bottom-color: #ef4444;
 }
+
+/* Add greater specificity to ensure UI variants actually work */
+[data-ui-variant="pill"] input {
+  border-radius: 9999px !important;
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+}
+
+[data-ui-variant="material"] input {
+  border: none !important;
+  border-bottom: 2px solid #e2e8f0 !important;
+  border-radius: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  background-color: transparent !important;
+}
+
+[data-ui-variant="borderless"] input {
+  border: none !important;
+  background-color: rgba(241, 245, 249, 0.7) !important;
+}
+
+[data-ui-variant="underlined"] input {
+  border: none !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  border-radius: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  background-color: transparent !important;
+}
+
+/* Error states with higher specificity */
+.has-error [data-ui-variant="standard"] input,
+.has-error [data-ui-variant="pill"] input {
+  border-color: #ef4444 !important;
+}
+
+.has-error [data-ui-variant="material"] input,
+.has-error [data-ui-variant="underlined"] input {
+  border-bottom-color: #ef4444 !important;
+}
+

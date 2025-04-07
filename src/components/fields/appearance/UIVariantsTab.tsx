@@ -1,9 +1,11 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { validateUIVariant } from "@/utils/inputAdapters";
+import { toast } from "@/hooks/use-toast";
 
 interface UIVariantsTabProps {
   settings: any;
@@ -66,8 +68,35 @@ export function UIVariantsTab({ settings, onUpdate }: UIVariantsTabProps) {
   ];
 
   // Ensure we have a valid UI variant or default to 'standard'
-  const currentVariant = settings.uiVariant || 'standard';
-  console.log(`Current UI variant in UIVariantsTab: ${currentVariant}`);
+  const currentVariant = validateUIVariant(settings.uiVariant);
+  
+  // Log current variant for debugging
+  useEffect(() => {
+    console.log(`Current UI variant in UIVariantsTab: ${currentVariant}`);
+  }, [currentVariant]);
+
+  const handleVariantChange = (value: string) => {
+    const validVariant = validateUIVariant(value);
+    console.log('UI Variant selected:', validVariant);
+    
+    // Update the UI variant in settings
+    const updatedSettings = {
+      ...settings,
+      uiVariant: validVariant
+    };
+    
+    // Call the onUpdate callback with the updated settings
+    onUpdate(updatedSettings);
+    
+    // Log the updated settings for debugging
+    console.log('Updated settings:', updatedSettings);
+    
+    // Show toast notification
+    toast({
+      title: "UI variant updated",
+      description: `Changed UI variant to ${validVariant}`,
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -78,11 +107,7 @@ export function UIVariantsTab({ settings, onUpdate }: UIVariantsTabProps) {
 
       <RadioGroup
         value={currentVariant}
-        onValueChange={(value) => {
-          console.log('UI Variant selected:', value);
-          // Force update the uiVariant setting
-          onUpdate({ uiVariant: value });
-        }}
+        onValueChange={handleVariantChange}
         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2"
       >
         {variants.map((variant) => (

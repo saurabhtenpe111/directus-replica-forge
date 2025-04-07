@@ -133,36 +133,36 @@ export const InputTextField = ({
     console.log(`Applying PILL style to input field ${id}`);
     inputStyle = {
       ...inputStyle,
-      borderRadius: '9999px !important',
-      border: `1px solid ${colors.border || (invalid ? "#dc2626" : "#e2e8f0")} !important`,
+      borderRadius: '9999px',
+      border: `1px solid ${colors.border || (invalid ? "#dc2626" : "#e2e8f0")}`,
     };
   } else if (validatedUiVariant === 'material') {
     console.log(`Applying MATERIAL style to input field ${id}`);
     inputStyle = {
       ...inputStyle,
-      border: 'none !important',
-      borderBottom: `2px solid ${colors.border || (invalid ? "#dc2626" : "#e2e8f0")} !important`,
-      borderRadius: '0 !important',
-      paddingLeft: '0 !important',
-      paddingRight: '0 !important',
+      border: 'none',
+      borderBottom: `2px solid ${colors.border || (invalid ? "#dc2626" : "#e2e8f0")}`,
+      borderRadius: '0',
+      paddingLeft: '0',
+      paddingRight: '0',
     };
   } else if (validatedUiVariant === 'borderless') {
     console.log(`Applying BORDERLESS style to input field ${id}`);
     inputStyle = {
       ...inputStyle,
-      border: 'none !important',
-      backgroundColor: `${colors.background || 'rgba(241, 245, 249, 0.7)'} !important`,
+      border: 'none',
+      backgroundColor: `${colors.background || 'rgba(241, 245, 249, 0.7)'}`,
     };
   } else if (validatedUiVariant === 'underlined') {
     console.log(`Applying UNDERLINED style to input field ${id}`);
     inputStyle = {
       ...inputStyle,
-      border: 'none !important',
-      borderBottom: `1px solid ${colors.border || (invalid ? "#dc2626" : "#e2e8f0")} !important`,
-      borderRadius: '0 !important',
-      paddingLeft: '0 !important',
-      paddingRight: '0 !important',
-      backgroundColor: 'transparent !important',
+      border: 'none',
+      borderBottom: `1px solid ${colors.border || (invalid ? "#dc2626" : "#e2e8f0")}`,
+      borderRadius: '0',
+      paddingLeft: '0',
+      paddingRight: '0',
+      backgroundColor: 'transparent',
     };
   } else {
     // Standard is the default style
@@ -199,11 +199,6 @@ export const InputTextField = ({
       style={inputContainerStyle}
       data-ui-variant={validatedUiVariant}
     >
-      {/* Add a visual indicator for the UI variant */}
-      <div className="text-xs text-gray-500 mb-1" style={{display: 'none'}}>
-        UI Variant: {validatedUiVariant}
-      </div>
-
       {label && !floatLabel && (
         <Label
           htmlFor={id}
