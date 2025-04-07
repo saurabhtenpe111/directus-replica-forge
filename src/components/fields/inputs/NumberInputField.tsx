@@ -1,297 +1,343 @@
 
 import React, { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ChevronUp, ChevronDown, Plus, Minus } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Plus, Minus } from "lucide-react";
 
-interface NumberInputFieldProps {
-  value: number | null;
+export interface NumberInputFieldProps {
+  id?: string;
+  value: number | null | undefined;
   onChange: (value: number | null) => void;
+  label?: string;
+  placeholder?: string;
+  helpText?: string;
   min?: number;
   max?: number;
   step?: number;
-  placeholder?: string;
-  prefix?: string;
-  suffix?: string;
-  locale?: string;
-  currency?: string;
-  showButtons?: boolean;
-  buttonLayout?: "horizontal" | "vertical";
-  label?: string;
+  required?: boolean;
   floatLabel?: boolean;
   filled?: boolean;
+  showButtons?: boolean;
+  buttonLayout?: "horizontal" | "vertical";
+  prefix?: string;
+  suffix?: string;
+  textAlign?: "left" | "center" | "right";
+  labelPosition?: "top" | "left";
+  labelWidth?: number;
+  showBorder?: boolean;
+  roundedCorners?: "none" | "small" | "medium" | "large";
+  fieldSize?: "small" | "medium" | "large";
+  labelSize?: "small" | "medium" | "large";
+  customClass?: string;
+  colors?: {
+    border?: string;
+    text?: string;
+    background?: string;
+    focus?: string;
+    label?: string;
+  };
+  locale?: string;
+  currency?: string;
   invalid?: boolean;
   disabled?: boolean;
-  required?: boolean;
-  id?: string;
-  name?: string;
-  className?: string;
-  style?: React.CSSProperties;
+  "aria-label"?: string;
 }
 
-export function NumberInputField({
+export const NumberInputField = ({
+  id = `number-${Math.random().toString(36).substring(2, 9)}`,
   value,
   onChange,
+  label,
+  placeholder = "",
+  helpText,
   min,
   max,
   step = 1,
-  placeholder = "Enter a number",
-  prefix,
-  suffix,
-  locale,
-  currency,
-  showButtons = false,
-  buttonLayout = "horizontal",
-  label,
+  required = false,
   floatLabel = false,
   filled = false,
+  showButtons = false,
+  buttonLayout = "horizontal",
+  prefix,
+  suffix,
+  textAlign = "left",
+  labelPosition = "top",
+  labelWidth = 30,
+  showBorder = true,
+  roundedCorners = "medium",
+  fieldSize = "medium",
+  labelSize = "medium",
+  customClass = "",
+  colors = {},
+  locale,
+  currency,
   invalid = false,
   disabled = false,
-  required = false,
-  id,
-  name,
-  className,
-  style,
-}: NumberInputFieldProps) {
-  const [localValue, setLocalValue] = useState<string>(
-    value !== null ? String(value) : ""
-  );
-  const [isFocused, setIsFocused] = useState(false);
+  "aria-label": ariaLabel
+}: NumberInputFieldProps) => {
+  const [hasFocus, setHasFocus] = useState(false);
+  const [localValue, setLocalValue] = useState<string>(value !== null && value !== undefined ? value.toString() : "");
 
+  // Update localValue when value prop changes
   useEffect(() => {
-    // Update local value when prop value changes
-    setLocalValue(value !== null ? String(value) : "");
+    setLocalValue(value !== null && value !== undefined ? value.toString() : "");
   }, [value]);
 
-  const formatNumber = (num: number): string => {
-    if (currency) {
-      return new Intl.NumberFormat(locale || undefined, {
-        style: "currency",
-        currency: currency,
-      }).format(num);
-    }
-    if (locale) {
-      return new Intl.NumberFormat(locale).format(num);
-    }
-    return String(num);
+  const inputContainerStyle: React.CSSProperties = {
+    display: labelPosition === "left" ? "flex" : "block",
+    alignItems: "center",
+    position: "relative"
   };
 
-  const parseNumber = (str: string): number | null => {
-    if (!str) return null;
-    
-    // Remove prefix, suffix, and formatting characters
-    let cleanedStr = str;
-    if (prefix) {
-      cleanedStr = cleanedStr.replace(prefix, "");
+  const labelStyle: React.CSSProperties = {
+    width: labelPosition === "left" ? `${labelWidth}%` : "auto",
+    fontSize: labelSize === "small" ? "0.875rem" : labelSize === "medium" ? "1rem" : "1.125rem",
+    fontWeight: labelSize === "large" ? 600 : 500,
+    color: colors.label || "#64748b",
+    marginBottom: labelPosition === "top" ? "0.5rem" : "0"
+  };
+
+  const getBorderRadius = () => {
+    switch (roundedCorners) {
+      case "none": return "0";
+      case "small": return "0.25rem";
+      case "medium": return "0.375rem";
+      case "large": return "0.5rem";
+      default: return "0.375rem";
     }
-    if (suffix) {
-      cleanedStr = cleanedStr.replace(suffix, "");
+  };
+
+  const getPadding = () => {
+    switch (fieldSize) {
+      case "small": return "0.375rem 0.5rem";
+      case "medium": return "0.5rem 0.75rem";
+      case "large": return "0.75rem 1rem";
+      default: return "0.5rem 0.75rem";
     }
-    
-    // Remove currency symbols and separators
-    cleanedStr = cleanedStr.replace(/[^-0-9.]/g, "");
-    
-    const parsed = parseFloat(cleanedStr);
-    if (isNaN(parsed)) return null;
-    
-    // Apply constraints
-    if (min !== undefined && parsed < min) return min;
-    if (max !== undefined && parsed > max) return max;
-    
-    return parsed;
+  };
+
+  // Define the inputStyle variable that was missing
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    padding: getPadding(),
+    borderRadius: getBorderRadius(),
+    textAlign: textAlign,
+    borderColor: invalid ? "#ef4444" : colors.border || "#e2e8f0",
+    color: colors.text || "#1e293b",
+    backgroundColor: filled ? (colors.background || "#f8fafc") : "#ffffff",
+    borderWidth: showBorder ? "1px" : "0",
+  };
+
+  const formatValue = (value: number): string => {
+    if (locale) {
+      try {
+        if (currency) {
+          return new Intl.NumberFormat(locale, {
+            style: 'currency',
+            currency: currency
+          }).format(value);
+        }
+        return new Intl.NumberFormat(locale).format(value);
+      } catch (e) {
+        console.warn(`Error formatting number with locale ${locale}:`, e);
+        return value.toString();
+      }
+    }
+    return value.toString();
+  };
+
+  const handleIncrement = () => {
+    const currentValue = value !== null && value !== undefined ? value : 0;
+    const newValue = currentValue + step;
+    if (max === undefined || newValue <= max) {
+      onChange(newValue);
+      setLocalValue(newValue.toString());
+    }
+  };
+
+  const handleDecrement = () => {
+    const currentValue = value !== null && value !== undefined ? value : 0;
+    const newValue = currentValue - step;
+    if (min === undefined || newValue >= min) {
+      onChange(newValue);
+      setLocalValue(newValue.toString());
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value;
-    setLocalValue(inputValue);
-    
-    const parsedValue = parseNumber(inputValue);
-    onChange(parsedValue);
-  };
 
-  const handleIncrement = () => {
-    if (disabled) return;
-    
-    const currentValue = value ?? 0;
-    const newValue = currentValue + step;
-    
-    if (max !== undefined && newValue > max) return;
-    
-    onChange(newValue);
-    setLocalValue(String(newValue));
-  };
+    if (inputValue === "" || inputValue === "-") {
+      setLocalValue(inputValue);
+      onChange(null);
+      return;
+    }
 
-  const handleDecrement = () => {
-    if (disabled) return;
-    
-    const currentValue = value ?? 0;
-    const newValue = currentValue - step;
-    
-    if (min !== undefined && newValue < min) return;
-    
-    onChange(newValue);
-    setLocalValue(String(newValue));
-  };
+    let cleanValue = inputValue;
+    if (locale) {
+      cleanValue = cleanValue.replace(/[^0-9.-]/g, '');
+    }
 
-  const handleBlur = () => {
-    setIsFocused(false);
-    
-    // Format the value as needed when leaving the field
-    if (value !== null) {
-      if (currency || locale) {
-        setLocalValue(formatNumber(value));
-      } else {
-        setLocalValue(String(value));
+    const numberValue = Number(cleanValue);
+
+    if (!isNaN(numberValue)) {
+      if ((min === undefined || numberValue >= min) &&
+          (max === undefined || numberValue <= max)) {
+        setLocalValue(inputValue);
+        onChange(numberValue);
+      } else if (min !== undefined && numberValue < min) {
+        setLocalValue(min.toString());
+        onChange(min);
+      } else if (max !== undefined && numberValue > max) {
+        setLocalValue(max.toString());
+        onChange(max);
       }
     }
   };
 
-  const handleFocus = () => {
-    setIsFocused(true);
-    
-    // When focusing, show the raw value for easier editing
-    if (value !== null) {
-      setLocalValue(String(value));
+  const handleBlur = () => {
+    setHasFocus(false);
+
+    if (localValue === "" || localValue === "-") {
+      if (required) {
+        const defaultValue = min !== undefined ? min : 0;
+        setLocalValue(defaultValue.toString());
+        onChange(defaultValue);
+      } else {
+        setLocalValue("");
+        onChange(null);
+      }
     }
   };
 
-  // Prepare display value with prefix/suffix
-  const displayValue = localValue 
-    ? `${prefix || ""}${localValue}${suffix || ""}`
-    : "";
-
-  const inputClasses = cn(
-    "flex",
-    filled ? "bg-gray-100" : "bg-white",
-    invalid ? "border-red-500" : "border-gray-300",
-    isFocused && !invalid ? "ring-2 ring-blue-500 border-blue-500" : "",
-    disabled ? "opacity-60 cursor-not-allowed" : ""
-  );
-
   return (
-    <div className="w-full space-y-1">
+    <div className={cn("space-y-2", customClass)} style={inputContainerStyle}>
       {label && !floatLabel && (
         <Label
           htmlFor={id}
-          className={cn(
-            "text-sm font-medium",
-            required ? "after:content-['*'] after:text-red-500 after:ml-0.5" : "",
-            invalid ? "text-red-500" : ""
-          )}
+          style={labelStyle}
+          className={required ? "after:content-['*'] after:ml-1 after:text-red-600" : ""}
         >
           {label}
         </Label>
       )}
-      
       <div
         className={cn(
-          "relative",
-          buttonLayout === "vertical" && showButtons ? "flex" : "",
-          className
+          "relative flex",
+          showButtons && buttonLayout === "horizontal" && "items-center",
+          showButtons && buttonLayout === "vertical" && "flex-col"
         )}
-        style={style}
+        style={{ width: labelPosition === "left" ? `${100 - labelWidth}%` : "100%" }}
       >
-        {floatLabel && (
+        {floatLabel && label && (
           <Label
             htmlFor={id}
             className={cn(
-              "absolute text-xs transition-all duration-200 pointer-events-none",
-              isFocused || localValue
-                ? "-top-2 left-2 px-1 bg-white text-blue-500 text-xs z-10"
-                : "top-2.5 left-3 text-gray-500",
-              required ? "after:content-['*'] after:text-red-500 after:ml-0.5" : "",
-              invalid ? "text-red-500" : ""
+              "absolute transition-all duration-200 pointer-events-none z-10",
+              (hasFocus || (value !== null && value !== undefined)) ? "-top-3 left-2 bg-white px-1 text-xs" : "top-1/2 left-3 -translate-y-1/2"
             )}
+            style={{
+              color: hasFocus ? (colors.focus || "#3b82f6") : (colors.label || "#64748b")
+            }}
           >
             {label}
           </Label>
         )}
-        
+
+        {showButtons && buttonLayout === "horizontal" && (
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={handleDecrement}
+            disabled={disabled || (min !== undefined && (value === null || value === undefined || value <= min))}
+            className="h-8 w-8"
+          >
+            <Minus className="h-3 w-3" />
+          </Button>
+        )}
+
         <div className="relative flex-1">
+          {prefix && (
+            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500">
+              {prefix}
+            </span>
+          )}
           <Input
-            type="text"
             id={id}
-            name={name}
-            value={displayValue}
+            type="text"
+            value={localValue}
             onChange={handleChange}
-            onFocus={handleFocus}
+            onFocus={() => setHasFocus(true)}
             onBlur={handleBlur}
-            placeholder={placeholder}
+            placeholder={floatLabel && label ? "" : placeholder}
             disabled={disabled}
+            aria-label={ariaLabel || label}
+            required={required}
+            style={{
+              ...inputStyle,
+              paddingLeft: prefix ? "2rem" : inputStyle.padding,
+              paddingRight: suffix ? "2rem" : inputStyle.padding
+            }}
             className={cn(
-              inputClasses,
-              showButtons && buttonLayout === "horizontal" ? "pr-16" : ""
+              "focus:ring-1 focus:ring-offset-0",
+              hasFocus && "outline-none",
+              invalid && "border-red-500 focus:ring-red-500",
+              disabled && "opacity-50 cursor-not-allowed"
             )}
-            aria-invalid={invalid}
-            aria-required={required}
-            min={min}
-            max={max}
-            step={step}
           />
-          
-          {showButtons && buttonLayout === "horizontal" && (
-            <div className="absolute inset-y-0 right-0 flex flex-col border-l">
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-1/2 w-8 rounded-none rounded-tr border-b"
-                onClick={handleIncrement}
-                disabled={disabled || (max !== undefined && (value ?? 0) >= max)}
-                aria-label="Increment"
-              >
-                <ChevronUp className="h-3 w-3" />
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-1/2 w-8 rounded-none rounded-br"
-                onClick={handleDecrement}
-                disabled={disabled || (min !== undefined && (value ?? 0) <= min)}
-                aria-label="Decrement"
-              >
-                <ChevronDown className="h-3 w-3" />
-              </Button>
-            </div>
+          {suffix && (
+            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500">
+              {suffix}
+            </span>
           )}
         </div>
-        
+
+        {showButtons && buttonLayout === "horizontal" && (
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={handleIncrement}
+            disabled={disabled || (max !== undefined && (value !== null && value !== undefined && value >= max))}
+            className="h-8 w-8"
+          >
+            <Plus className="h-3 w-3" />
+          </Button>
+        )}
+
         {showButtons && buttonLayout === "vertical" && (
-          <div className="flex flex-col ml-1 space-y-1">
+          <div className="flex">
             <Button
               type="button"
               variant="outline"
               size="icon"
-              className="h-8 w-8"
-              onClick={handleIncrement}
-              disabled={disabled || (max !== undefined && (value ?? 0) >= max)}
-              aria-label="Increment"
+              onClick={handleDecrement}
+              disabled={disabled || (min !== undefined && (value === null || value === undefined || value <= min))}
+              className="h-8 w-8 rounded-r-none"
             >
-              <Plus className="h-4 w-4" />
+              <Minus className="h-3 w-3" />
             </Button>
             <Button
               type="button"
               variant="outline"
               size="icon"
-              className="h-8 w-8"
-              onClick={handleDecrement}
-              disabled={disabled || (min !== undefined && (value ?? 0) <= min)}
-              aria-label="Decrement"
+              onClick={handleIncrement}
+              disabled={disabled || (max !== undefined && (value !== null && value !== undefined && value >= max))}
+              className="h-8 w-8 rounded-l-none"
             >
-              <Minus className="h-4 w-4" />
+              <Plus className="h-3 w-3" />
             </Button>
           </div>
         )}
       </div>
-      
-      {invalid && (
-        <p className="text-xs text-red-500 mt-1">
-          Invalid value. Please enter a valid number.
-        </p>
+      {helpText && (
+        <p className={cn("text-sm", invalid ? "text-red-500" : "text-gray-500")}>{helpText}</p>
       )}
     </div>
   );
-}
+};
+
+export default NumberInputField;
