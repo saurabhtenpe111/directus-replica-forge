@@ -1,6 +1,6 @@
 import React from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { CreateComponentDrawer } from '@/components/CreateComponentDrawer';
 
 import { useState, useEffect } from "react";
@@ -48,6 +48,7 @@ const getMockComponent = (id: string): Component | undefined => {
 
 export default function ComponentDetails() {
   const { componentId } = useParams<{ componentId: string }>();
+  const navigate = useNavigate();
   const [component, setComponent] = useState<Component | null>(null);
   const [activeTab, setActiveTab] = useState("preview");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -62,7 +63,7 @@ export default function ComponentDetails() {
         navigate("/components");
       }
     }
-  }, [componentId]);
+  }, [componentId, navigate]);
   
   const handleDelete = () => {
     toast({
