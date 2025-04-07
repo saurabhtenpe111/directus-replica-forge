@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
@@ -8,11 +8,6 @@ import { ArrowLeft } from 'lucide-react';
 export default function CollectionPreview() {
   const { collectionId } = useParams<{ collectionId: string }>();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    // Show a message that we're redirecting
-    console.log('Redirecting to fields configuration page...');
-  }, []);
 
   const handleBackClick = () => {
     navigate(`/collections/${collectionId}/fields`);
