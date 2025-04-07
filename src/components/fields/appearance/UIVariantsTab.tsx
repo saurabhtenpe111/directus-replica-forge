@@ -65,6 +65,10 @@ export function UIVariantsTab({ settings, onUpdate }: UIVariantsTabProps) {
     }
   ];
 
+  // Ensure we have a valid UI variant or default to 'standard'
+  const currentVariant = settings.uiVariant || 'standard';
+  console.log(`Current UI variant in UIVariantsTab: ${currentVariant}`);
+
   return (
     <div className="space-y-6">
       <h3 className="text-lg font-medium">UI Variants</h3>
@@ -73,7 +77,7 @@ export function UIVariantsTab({ settings, onUpdate }: UIVariantsTabProps) {
       </p>
 
       <RadioGroup
-        value={settings.uiVariant || 'standard'}
+        value={currentVariant}
         onValueChange={(value) => {
           console.log('UI Variant selected:', value);
           // Force update the uiVariant setting
@@ -92,7 +96,7 @@ export function UIVariantsTab({ settings, onUpdate }: UIVariantsTabProps) {
               htmlFor={`ui-variant-${variant.id}`}
               className={cn(
                 "cursor-pointer flex flex-col h-full border rounded-md p-4 hover:border-primary transition-colors",
-                settings.uiVariant === variant.id && "border-2 border-primary"
+                currentVariant === variant.id && "border-2 border-primary"
               )}
             >
               <span className="font-medium mb-2">{variant.name}</span>

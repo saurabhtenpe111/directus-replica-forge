@@ -1,4 +1,3 @@
-
 import React from "react";
 import InputTextField from "../fields/inputs/InputTextField";
 import PasswordInputField from "../fields/inputs/PasswordInputField";
@@ -28,6 +27,7 @@ import MaskInputField from "../fields/inputs/MaskInputField";
 import OTPInputField from "../fields/inputs/OTPInputField";
 import AutocompleteInputField from "../fields/inputs/AutocompleteInputField";
 import { cn } from "@/lib/utils";
+import { validateUIVariant } from "@/utils/inputAdapters";
 
 export interface FieldRendererProps {
   field: any;
@@ -53,18 +53,22 @@ export const FieldRenderer = ({ field, formData, titleField, onInputChange, erro
   const appearance = field.appearance || {};
   console.log(`Appearance settings for field ${fieldName}:`, JSON.stringify(appearance, null, 2));
 
-  // Log UI variant specifically
+  // Log UI variant specifically and ensure it's valid
+  let uiVariant = 'standard';
+  
   if (appearance.uiVariant) {
-    console.log(`UI Variant for field ${fieldName} in FieldRenderer:`, appearance.uiVariant);
+    uiVariant = validateUIVariant(appearance.uiVariant);
+    console.log(`UI Variant for field ${fieldName} in FieldRenderer:`, uiVariant);
   } else {
-    console.log(`No UI Variant found for field ${fieldName} in FieldRenderer`);
+    console.log(`No UI Variant found for field ${fieldName} in FieldRenderer, using default`);
 
     // If no UI variant is found, check if it's in the field settings
     if (field.settings?.appearance?.uiVariant) {
-      appearance.uiVariant = field.settings.appearance.uiVariant;
-      console.log(`Found UI Variant in settings for field ${fieldName}:`, appearance.uiVariant);
+      uiVariant = validateUIVariant(field.settings.appearance.uiVariant);
+      console.log(`Found UI Variant in settings for field ${fieldName}:`, uiVariant);
     }
   }
+  
   const {
     textAlign,
     labelPosition,
@@ -76,7 +80,6 @@ export const FieldRenderer = ({ field, formData, titleField, onInputChange, erro
     roundedCorners,
     fieldSize,
     labelSize,
-    uiVariant,
     customClass,
     colors = {}
   } = appearance;
@@ -88,7 +91,8 @@ export const FieldRenderer = ({ field, formData, titleField, onInputChange, erro
   const fieldClassName = cn(
     customClass || "",
     "w-full",
-    hasError && "has-error"
+    hasError && "has-error",
+    `ui-variant-${uiVariant}` // Add UI variant class
   );
 
   switch (field.type) {
@@ -114,7 +118,9 @@ export const FieldRenderer = ({ field, formData, titleField, onInputChange, erro
           labelSize={labelSize || "medium"}
           customClass={fieldClassName}
           colors={colors}
-          uiVariant={appearance.uiVariant || 'standard'}
+          uiVariant={uiVariant} // Use the validated UI variant
+          errorMessage={hasError ? errorMessage : undefined}
+          invalid={hasError}
         />
       );
 

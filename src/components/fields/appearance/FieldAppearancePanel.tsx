@@ -10,6 +10,7 @@ import { FieldPreview } from "./FieldPreview";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { SaveIcon } from "lucide-react";
+import { validateUIVariant } from "@/utils/inputAdapters";
 
 interface FieldAppearancePanelProps {
   fieldType: string | null;
@@ -27,9 +28,12 @@ export function FieldAppearancePanel({
   const [isDarkMode, setIsDarkMode] = useState(initialData?.isDarkMode || false);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Ensure we get a valid UI variant from initialData or use 'standard' as default
+  const defaultUIVariant = validateUIVariant(initialData?.uiVariant);
+
   // State for appearance settings
   const [settings, setSettings] = useState({
-    uiVariant: initialData?.uiVariant || 'standard',
+    uiVariant: defaultUIVariant,
     theme: initialData?.theme || 'classic',
     colors: initialData?.colors || {
       border: '#e2e8f0',
@@ -55,14 +59,20 @@ export function FieldAppearancePanel({
     ...initialData
   });
 
-  console.log("Initial appearance data:", initialData);
+  console.log("Initial appearance data:", JSON.stringify(initialData, null, 2));
+  console.log("Default UI variant set to:", defaultUIVariant);
 
   // Update settings when initialData changes
   useEffect(() => {
     if (initialData) {
+      // Validate the UI variant
+      const validUIVariant = validateUIVariant(initialData?.uiVariant);
+      console.log(`Validated UI variant from initialData: ${validUIVariant}`);
+
       setSettings(prevSettings => ({
         ...prevSettings,
         ...initialData,
+        uiVariant: validUIVariant,
         colors: initialData?.colors || prevSettings.colors,
         isDarkMode: initialData?.isDarkMode || prevSettings.isDarkMode
       }));
@@ -79,6 +89,10 @@ export function FieldAppearancePanel({
     setSettings(updatedSettings);
 
     console.log("Updated appearance settings:", updatedSettings);
+    // Ensure uiVariant is explicitly logged
+    if (newSettings.uiVariant) {
+      console.log("UI Variant updated to:", newSettings.uiVariant);
+    }
   };
 
   // Save all settings to parent component
@@ -86,14 +100,16 @@ export function FieldAppearancePanel({
     setIsSaving(true);
 
     try {
-      // Ensure uiVariant is included in the settings
+      // Ensure uiVariant is included in the settings and is valid
+      const validUIVariant = validateUIVariant(settings.uiVariant);
+      
       const settingsToSave = {
         ...settings,
-        uiVariant: settings.uiVariant || 'standard'
+        uiVariant: validUIVariant
       };
 
       console.log("Saving appearance settings:", settingsToSave);
-      console.log("UI Variant being saved:", settingsToSave.uiVariant);
+      console.log("UI Variant being saved:", validUIVariant);
 
       // Save settings to parent component
       onSave(settingsToSave);

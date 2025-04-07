@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { validateUIVariant } from "@/utils/inputAdapters";
 
 export interface InputTextFieldProps {
   id: string;
@@ -68,6 +69,10 @@ export const InputTextField = ({
 }: InputTextFieldProps) => {
   const [hasFocus, setHasFocus] = useState(false);
 
+  // Validate UI variant
+  const validatedUiVariant = validateUIVariant(uiVariant);
+  console.log(`UI Variant in InputTextField ${id}:`, validatedUiVariant);
+
   // Use size prop if provided (for backwards compatibility)
   const effectiveFieldSize = size || fieldSize;
 
@@ -121,17 +126,17 @@ export const InputTextField = ({
   };
 
   // Force apply UI variant styles
-  console.log(`Applying UI variant to input field ${id}:`, uiVariant);
+  console.log(`Applying UI variant to input field ${id}:`, validatedUiVariant);
 
   // Apply UI variant styles directly based on the variant
-  if (uiVariant === 'pill') {
+  if (validatedUiVariant === 'pill') {
     console.log(`Applying PILL style to input field ${id}`);
     inputStyle = {
       ...inputStyle,
       borderRadius: '9999px !important',
       border: `1px solid ${colors.border || (invalid ? "#dc2626" : "#e2e8f0")} !important`,
     };
-  } else if (uiVariant === 'material') {
+  } else if (validatedUiVariant === 'material') {
     console.log(`Applying MATERIAL style to input field ${id}`);
     inputStyle = {
       ...inputStyle,
@@ -141,14 +146,14 @@ export const InputTextField = ({
       paddingLeft: '0 !important',
       paddingRight: '0 !important',
     };
-  } else if (uiVariant === 'borderless') {
+  } else if (validatedUiVariant === 'borderless') {
     console.log(`Applying BORDERLESS style to input field ${id}`);
     inputStyle = {
       ...inputStyle,
       border: 'none !important',
       backgroundColor: `${colors.background || 'rgba(241, 245, 249, 0.7)'} !important`,
     };
-  } else if (uiVariant === 'underlined') {
+  } else if (validatedUiVariant === 'underlined') {
     console.log(`Applying UNDERLINED style to input field ${id}`);
     inputStyle = {
       ...inputStyle,
@@ -189,10 +194,14 @@ export const InputTextField = ({
   };
 
   return (
-    <div className={cn("space-y-2", customClass, `ui-variant-${uiVariant}`)} style={inputContainerStyle}>
+    <div 
+      className={cn("space-y-2", customClass, `ui-variant-${validatedUiVariant}`)} 
+      style={inputContainerStyle}
+      data-ui-variant={validatedUiVariant}
+    >
       {/* Add a visual indicator for the UI variant */}
       <div className="text-xs text-gray-500 mb-1" style={{display: 'none'}}>
-        UI Variant: {uiVariant}
+        UI Variant: {validatedUiVariant}
       </div>
 
       {label && !floatLabel && (
@@ -237,12 +246,12 @@ export const InputTextField = ({
           required={required}
           disabled={disabled}
           style={inputStyle}
-          data-ui-variant={uiVariant}
+          data-ui-variant={validatedUiVariant}
           className={cn(
             "focus:ring-1 focus:ring-offset-0",
             hasFocus && "outline-none",
             invalid && "border-red-500 focus:ring-red-500",
-            `input-variant-${uiVariant}`
+            `input-variant-${validatedUiVariant}`
           )}
         />
       </div>
