@@ -69,12 +69,12 @@ type CreateComponentDrawerProps = {
   initialData: Component | null;
 };
 
-const CreateComponentDrawer = ({ 
+export function CreateComponentDrawer({ 
   open, 
   onOpenChange, 
   onSave,
   initialData
-}: CreateComponentDrawerProps) => {
+}: CreateComponentDrawerProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("layout");
@@ -166,6 +166,7 @@ const CreateComponentDrawer = ({
   const handleSaveComponent = () => {
     if (!validateForm()) return;
     
+    // Ensure field names are unique within the component
     const fieldNames = fields.map(f => f.name.trim().toLowerCase());
     const hasDuplicates = fieldNames.length !== new Set(fieldNames).size;
     
@@ -186,6 +187,7 @@ const CreateComponentDrawer = ({
       lastUpdated: new Date().toLocaleDateString()
     };
     
+    // Store component in local storage to persist it
     const existingComponents = JSON.parse(localStorage.getItem('components') || '[]');
     const existingIndex = existingComponents.findIndex((c: Component) => c.id === newComponent.id);
     
@@ -543,6 +545,4 @@ const CreateComponentDrawer = ({
       </DialogContent>
     </Dialog>
   );
-};
-
-export default CreateComponentDrawer;
+}

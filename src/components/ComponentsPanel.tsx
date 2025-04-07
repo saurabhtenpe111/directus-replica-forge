@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import CreateComponentDrawer from "@/components/CreateComponentDrawer";
+import { CreateComponentDrawer } from "@/components/components/CreateComponentDrawer";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
@@ -116,7 +116,7 @@ const componentTypes: Record<string, ComponentType[]> = {
   ]
 };
 
-const ComponentsPanel = () => {
+export function ComponentsPanel() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -387,6 +387,4 @@ const ComponentsPanel = () => {
       </AlertDialog>
     </div>
   );
-};
-
-export default ComponentsPanel;
+}

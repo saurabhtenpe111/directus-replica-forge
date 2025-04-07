@@ -10,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Component } from "@/services/ComponentService";
 import { toast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import CreateComponentDrawer from "@/components/components/CreateComponentDrawer";
+import { CreateComponentDrawer } from "@/components/components/CreateComponentDrawer";
 
 const getMockComponent = (id: string): Component | undefined => {
   const components = [
