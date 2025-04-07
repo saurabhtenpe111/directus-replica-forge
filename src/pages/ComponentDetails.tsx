@@ -1,6 +1,9 @@
-import { useParams, useNavigate } from "react-router-dom";
+import React from 'react';
+import { MainLayout } from '@/components/layout/MainLayout';
+import { useParams } from 'react-router-dom';
+import { CreateComponentDrawer } from '@/components/CreateComponentDrawer';
+
 import { useState, useEffect } from "react";
-import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Edit, Trash2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +13,6 @@ import { Separator } from "@/components/ui/separator";
 import { Component } from "@/services/ComponentService";
 import { toast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { CreateComponentDrawer } from "@/components/CreateComponentDrawer";
 
 const getMockComponent = (id: string): Component | undefined => {
   const components = [
@@ -46,8 +48,6 @@ const getMockComponent = (id: string): Component | undefined => {
 
 export default function ComponentDetails() {
   const { componentId } = useParams<{ componentId: string }>();
-  const navigate = useNavigate();
-  
   const [component, setComponent] = useState<Component | null>(null);
   const [activeTab, setActiveTab] = useState("preview");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -62,7 +62,7 @@ export default function ComponentDetails() {
         navigate("/components");
       }
     }
-  }, [componentId, navigate]);
+  }, [componentId]);
   
   const handleDelete = () => {
     toast({

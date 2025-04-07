@@ -1,7 +1,8 @@
+
 import React from "react";
-import InputTextField from "../fields/inputs/InputTextField";
-import PasswordInputField from "../fields/inputs/PasswordInputField";
-import NumberInputField from "../fields/inputs/NumberInputField";
+import { InputTextField } from "../fields/inputs/InputTextField";
+import { PasswordInputField } from "../fields/inputs/PasswordInputField";
+import { NumberInputField } from "../fields/inputs/NumberInputField";
 import { Textarea } from "@/components/ui/textarea";
 import MarkdownEditorField from "../fields/inputs/MarkdownEditorField";
 import WysiwygEditorField from "../fields/inputs/WysiwygEditorField";
