@@ -132,9 +132,7 @@ export function FieldAppearancePanel({
 
       // Prepare field update data
       const fieldData = {
-        settings: {
-          appearance: normalizedSettings
-        }
+        appearance_settings: normalizedSettings
       };
 
       // Call the updateField service function directly
@@ -148,8 +146,8 @@ export function FieldAppearancePanel({
       });
 
       // Update local state with the latest data from the database
-      if (updatedField?.settings?.appearance) {
-        const dbSettings = normalizeAppearanceSettings(updatedField.settings.appearance);
+      if (updatedField?.appearance_settings) {
+        const dbSettings = normalizeAppearanceSettings(updatedField.appearance_settings);
         setSettings(dbSettings);
       }
     } catch (error) {

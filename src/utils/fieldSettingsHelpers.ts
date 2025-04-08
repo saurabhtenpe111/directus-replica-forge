@@ -1,3 +1,4 @@
+
 /**
  * Helper utilities for accessing and updating field settings consistently
  * across the application.
@@ -14,7 +15,24 @@ export interface FieldSettings {
   advanced?: AdvancedSettings;
   ui_options?: UIOptions;
   helpText?: string;
-  general?: Record<string, any>; // Add general settings to the interface
+  general?: GeneralSettings;
+}
+
+export interface GeneralSettings {
+  description?: string;
+  helpText?: string;
+  defaultValue?: string | number | boolean | any[];
+  keyFilter?: 'none' | 'letters' | 'numbers' | 'alphanumeric';
+  min?: number;
+  max?: number;
+  length?: number;
+  maxTags?: number;
+  prefix?: string;
+  suffix?: string;
+  rows?: number;
+  minHeight?: string;
+  hidden_in_forms?: boolean;
+  [key: string]: any;
 }
 
 export interface ValidationSettings {
@@ -25,6 +43,9 @@ export interface ValidationSettings {
   message?: string;
   min?: number;
   max?: number;
+  email?: boolean;
+  url?: boolean;
+  unique?: boolean;
   [key: string]: any;
 }
 
@@ -96,7 +117,7 @@ export interface UIOptions {
  * Enhanced field settings structure with dedicated columns
  */
 export interface FieldSettingsColumns {
-  general_settings?: Record<string, any>;
+  general_settings?: GeneralSettings;
   validation_settings?: ValidationSettings;
   appearance_settings?: AppearanceSettings;
   advanced_settings?: AdvancedSettings;
@@ -147,6 +168,13 @@ export function getNormalizedFieldSettings(fieldData: any): FieldSettings {
   } else if (fieldData.settings?.helpText) {
     settings.helpText = fieldData.settings.helpText;
   }
+  
+  // Handle general settings
+  if (fieldData.general) {
+    settings.general = fieldData.general;
+  } else if (fieldData.settings?.general) {
+    settings.general = fieldData.settings.general;
+  }
 
   return settings;
 }
@@ -162,7 +190,8 @@ export const getSettingsFromColumns = (fieldData: any): FieldSettings => {
     fieldData.validation_settings ||
     fieldData.appearance_settings ||
     fieldData.advanced_settings ||
-    fieldData.ui_options_settings
+    fieldData.ui_options_settings ||
+    fieldData.general_settings
   ) {
     return {
       validation: fieldData.validation_settings || {},
@@ -170,6 +199,7 @@ export const getSettingsFromColumns = (fieldData: any): FieldSettings => {
       advanced: fieldData.advanced_settings || {},
       ui_options: fieldData.ui_options_settings || {},
       general: fieldData.general_settings || {},
+      helpText: fieldData.general_settings?.helpText || fieldData.helpText || '',
     };
   }
 
@@ -187,6 +217,28 @@ export function getSettingsSection<T = any>(fieldData: any, section: keyof Field
   const settings = getSettingsFromColumns(fieldData);
   return (settings[section] as T) || {} as T;
 }
+
+/**
+ * Get general settings from field data
+ * @param fieldData The field data object
+ * @returns GeneralSettings object
+ */
+export const getGeneralSettings = (fieldData: any): GeneralSettings => {
+  if (fieldData?.general_settings) {
+    return fieldData.general_settings;
+  } else if (fieldData?.general) {
+    return fieldData.general;
+  } else if (fieldData?.settings?.general) {
+    return fieldData.settings.general;
+  }
+  
+  // Construct general settings from top-level properties if not found in dedicated locations
+  const general: GeneralSettings = {};
+  if (fieldData?.description) general.description = fieldData.description;
+  if (fieldData?.helpText) general.helpText = fieldData.helpText;
+  
+  return general;
+};
 
 /**
  * Get validation settings from field data
@@ -309,6 +361,9 @@ export const createColumnUpdatePayload = (
       return { ui_options_settings: settings };
     case 'general':
       return { general_settings: settings };
+    case 'helpText':
+      // HelpText gets stored in general_settings
+      return { general_settings: { helpText: settings } };
     default:
       // For backward compatibility
       return createUpdatePayload(section, settings);
@@ -343,7 +398,6 @@ export function standardizeFieldForDatabase(fieldData: any): any {
     name: fieldData.name,
     type: fieldData.type,
     required: !!fieldData.required,
-    settings: {}
   };
 
   // Add API ID if present
@@ -356,28 +410,62 @@ export function standardizeFieldForDatabase(fieldData: any): any {
     standardizedField.description = fieldData.description;
   }
 
-  // Collect all settings into the settings object
-  const normalizedSettings = getNormalizedFieldSettings(fieldData);
-
-  // Add each settings section to the standardized structure
-  if (normalizedSettings.validation) {
-    standardizedField.settings.validation = normalizedSettings.validation;
+  // Prepare the columns for the new structure
+  const general_settings: Record<string, any> = {
+    helpText: fieldData.helpText,
+    description: fieldData.description
+  };
+  
+  // Add field-specific properties to general settings
+  if (fieldData.defaultValue !== undefined) general_settings.defaultValue = fieldData.defaultValue;
+  if (fieldData.keyFilter) general_settings.keyFilter = fieldData.keyFilter;
+  if (fieldData.min !== undefined) general_settings.min = fieldData.min;
+  if (fieldData.max !== undefined) general_settings.max = fieldData.max;
+  if (fieldData.length) general_settings.length = fieldData.length;
+  if (fieldData.maxTags) general_settings.maxTags = fieldData.maxTags;
+  if (fieldData.prefix) general_settings.prefix = fieldData.prefix;
+  if (fieldData.suffix) general_settings.suffix = fieldData.suffix;
+  if (fieldData.rows) general_settings.rows = fieldData.rows;
+  if (fieldData.minHeight) general_settings.minHeight = fieldData.minHeight;
+  
+  // Add UI options
+  if (fieldData.ui_options) {
+    standardizedField.ui_options_settings = fieldData.ui_options;
   }
   
-  if (normalizedSettings.appearance) {
-    standardizedField.settings.appearance = normalizedSettings.appearance;
+  // Add validation settings
+  if (fieldData.validation) {
+    standardizedField.validation_settings = fieldData.validation;
   }
   
-  if (normalizedSettings.advanced) {
-    standardizedField.settings.advanced = normalizedSettings.advanced;
+  // Add appearance settings
+  if (fieldData.appearance) {
+    standardizedField.appearance_settings = fieldData.appearance;
   }
   
-  if (normalizedSettings.ui_options) {
-    standardizedField.settings.ui_options = normalizedSettings.ui_options;
+  // Add advanced settings
+  if (fieldData.advanced) {
+    standardizedField.advanced_settings = fieldData.advanced;
   }
   
-  if (normalizedSettings.helpText) {
-    standardizedField.settings.helpText = normalizedSettings.helpText;
+  // Only add general settings if we have data
+  if (Object.keys(general_settings).some(key => general_settings[key] !== undefined)) {
+    standardizedField.general_settings = general_settings;
+  }
+  
+  // Collect all settings into the legacy settings object for backward compatibility
+  const settings: Record<string, any> = {};
+  
+  if (fieldData.validation) settings.validation = fieldData.validation;
+  if (fieldData.appearance) settings.appearance = fieldData.appearance;
+  if (fieldData.advanced) settings.advanced = fieldData.advanced;
+  if (fieldData.ui_options) settings.ui_options = fieldData.ui_options;
+  if (fieldData.helpText) settings.helpText = fieldData.helpText;
+  if (Object.keys(general_settings).length > 0) settings.general = general_settings;
+  
+  // Only add settings if we have some data
+  if (Object.keys(settings).length > 0) {
+    standardizedField.settings = settings;
   }
 
   return standardizedField;
@@ -430,7 +518,8 @@ export function getNestedSetting(
  * with consistent structure for rendering
  */
 export function prepareFieldForPreview(field: any): any {
-  const settings = getNormalizedFieldSettings(field);
+  const settings = getSettingsFromColumns(field);
+  const generalSettings = getGeneralSettings(field);
   
   return {
     id: field.id,
@@ -438,12 +527,13 @@ export function prepareFieldForPreview(field: any): any {
     type: field.type,
     apiId: field.api_id || field.apiId,
     required: field.required || false,
-    helpText: settings.helpText || field.description || '',
+    helpText: generalSettings.helpText || settings.helpText || field.description || '',
     placeholder: settings.ui_options?.placeholder || `Enter ${field.name}...`,
     validation: settings.validation || {},
     appearance: settings.appearance || {},
     advanced: settings.advanced || {},
     ui_options: settings.ui_options || {},
+    general: generalSettings || {},
     options: field.options || []
   };
 }
