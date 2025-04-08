@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
 import { normalizeAppearanceSettings, validateUIVariant } from '@/utils/inputAdapters';
@@ -56,7 +55,6 @@ export interface CollectionFormData {
   apiId: string;
   description?: string;
   status?: string;
-  settings?: any;
 }
 
 export interface CollectionField {
@@ -79,12 +77,6 @@ export interface CollectionField {
   general_settings?: any;
   sort_order?: number;
   collection_id?: string;
-}
-
-// Define a new interface for specifying which columns to update
-export interface FieldUpdateOptions {
-  columnToUpdate?: 'validation_settings' | 'appearance_settings' | 'advanced_settings' | 'ui_options_settings' | 'general_settings' | 'all';
-  mergeStrategy?: 'deep' | 'shallow' | 'replace';
 }
 
 type SupabaseFieldRow = Database['public']['Tables']['fields']['Row'] & {
@@ -153,69 +145,6 @@ const mapSupabaseField = (field: SupabaseFieldRow): CollectionField => {
   };
 };
 
-// Helper function for deep merging objects
-const deepMerge = (target: any, source: any): any => {
-  if (!isObject(target) || !isObject(source)) {
-    return source;
-  }
-  
-  const output = { ...target };
-  
-  Object.keys(source).forEach(key => {
-    if (isObject(source[key])) {
-      if (!(key in target)) {
-        output[key] = source[key];
-      } else {
-        output[key] = deepMerge(target[key], source[key]);
-      }
-    } else if (Array.isArray(source[key])) {
-      // For arrays, replace the entire array rather than trying to merge
-      output[key] = [...source[key]];
-    } else {
-      output[key] = source[key];
-    }
-  });
-  
-  return output;
-};
-
-// Helper function to log object differences for debugging
-const logObjectDiff = (before: any, after: any, path = '') => {
-  if (!isObject(before) || !isObject(after)) {
-    if (before !== after) {
-      console.log(`[DIFF] ${path}: ${JSON.stringify(before)} -> ${JSON.stringify(after)}`);
-    }
-    return;
-  }
-  
-  // Check keys in before that might have changed or been removed
-  Object.keys(before).forEach(key => {
-    const currentPath = path ? `${path}.${key}` : key;
-    
-    if (!(key in after)) {
-      console.log(`[DIFF] ${currentPath}: ${JSON.stringify(before[key])} -> REMOVED`);
-    } else if (isObject(before[key]) && isObject(after[key])) {
-      logObjectDiff(before[key], after[key], currentPath);
-    } else if (Array.isArray(before[key]) && Array.isArray(after[key])) {
-      if (JSON.stringify(before[key]) !== JSON.stringify(after[key])) {
-        console.log(`[DIFF] ${currentPath} (array): Changed`);
-        console.log(`  Before: ${JSON.stringify(before[key], null, 2)}`);
-        console.log(`  After: ${JSON.stringify(after[key], null, 2)}`);
-      }
-    } else if (before[key] !== after[key]) {
-      console.log(`[DIFF] ${currentPath}: ${JSON.stringify(before[key])} -> ${JSON.stringify(after[key])}`);
-    }
-  });
-  
-  // Check for new keys in after
-  Object.keys(after).forEach(key => {
-    if (!(key in before)) {
-      const currentPath = path ? `${path}.${key}` : key;
-      console.log(`[DIFF] ${currentPath}: NEW -> ${JSON.stringify(after[key])}`);
-    }
-  });
-};
-
 const isObject = (item: any): boolean => {
   return (item && typeof item === 'object' && !Array.isArray(item));
 };
@@ -274,10 +203,12 @@ export const CollectionService = {
 
       debugLog(`Highest sort order is: ${highestSortOrder}`);
 
+      const { apiId, ...restData } = fieldData;
+
       // Set up field data using only the new columns structure
       const field: any = {
         name: fieldData.name || 'New Field',
-        api_id: fieldData.api_id || fieldData.name?.toLowerCase().replace(/\s+/g, '_') || 'new_field',
+        api_id: apiId || fieldData.name?.toLowerCase().replace(/\s+/g, '_') || 'new_field',
         type: fieldData.type || 'text',
         collection_id: collectionId,
         description: fieldData.description || null,
@@ -354,17 +285,22 @@ export const CollectionService = {
     }
   },
 
-  updateField: async (
-    collectionId: string, 
-    fieldId: string, 
-    fieldData: Partial<CollectionField>,
-    options: FieldUpdateOptions = { columnToUpdate: 'all', mergeStrategy: 'deep' }
-  ): Promise<CollectionField> => {
+  updateField: async (collectionId: string, fieldId: string, fieldData: Partial<CollectionField>): Promise<CollectionField> => {
     try {
       debugLog(`Updating field ${fieldId} in collection ${collectionId}:`, fieldData);
-      debugLog(`Update options: ${JSON.stringify(options)}`);
+      debugLog(`Original field data:`, JSON.stringify(fieldData, null, 2));
       
-      // Get current field data to provide proper defaults and for deep merging
+      const updateData: any = {};
+
+      // Map basic field properties
+      if (fieldData.name) updateData.name = fieldData.name;
+      if (fieldData.apiId) updateData.api_id = fieldData.apiId;
+      if (fieldData.type) updateData.type = fieldData.type;
+      if (fieldData.description !== undefined) updateData.description = fieldData.description;
+      if (fieldData.required !== undefined) updateData.required = fieldData.required;
+      if (fieldData.sort_order !== undefined) updateData.sort_order = fieldData.sort_order;
+
+      // Get current field data to provide proper defaults
       const { data: currentField, error: getCurrentError } = await supabase
         .from('fields')
         .select('*')
@@ -378,126 +314,39 @@ export const CollectionService = {
 
       debugLog(`Current field data from database:`, JSON.stringify(currentField, null, 2));
       
-      // Initialize update data object
-      const updateData: any = {};
-      
-      // If we're doing a full update or specific basic field properties are provided, include them
-      if (options.columnToUpdate === 'all') {
-        // Map basic field properties
-        if (fieldData.name) updateData.name = fieldData.name;
-        if (fieldData.api_id) updateData.api_id = fieldData.api_id;
-        if (fieldData.type) updateData.type = fieldData.type;
-        if (fieldData.description !== undefined) updateData.description = fieldData.description;
-        if (fieldData.required !== undefined) updateData.required = fieldData.required;
-        if (fieldData.sort_order !== undefined) updateData.sort_order = fieldData.sort_order;
+      // Handle validation settings
+      if (fieldData.validation_settings || (fieldData as any).validation) {
+        const newValidation = fieldData.validation_settings || (fieldData as any).validation || {};
+        updateData.validation_settings = newValidation;
+        debugLog('[updateField] New validation settings:', JSON.stringify(newValidation, null, 2));
       }
       
-      // Process specific column updates based on options
-      if (options.columnToUpdate === 'all' || options.columnToUpdate === 'validation_settings') {
-        // Handle validation settings
-        if (fieldData.validation_settings || (fieldData as any).validation) {
-          const newValidation = fieldData.validation_settings || (fieldData as any).validation || {};
-          
-          // Apply merge strategy
-          if (options.mergeStrategy === 'deep' && currentField.validation_settings) {
-            updateData.validation_settings = deepMerge(currentField.validation_settings, newValidation);
-            
-            // Log differences for debugging
-            console.log('Validation settings deep merge:');
-            logObjectDiff(currentField.validation_settings, updateData.validation_settings);
-          } else {
-            updateData.validation_settings = newValidation;
-          }
-          
-          debugLog('[updateField] New validation settings:', JSON.stringify(updateData.validation_settings, null, 2));
-        }
+      // Handle appearance settings
+      if (fieldData.appearance_settings || (fieldData as any).appearance) {
+        const newAppearance = fieldData.appearance_settings || (fieldData as any).appearance || {};
+        // Normalize appearance settings
+        updateData.appearance_settings = normalizeAppearanceSettings(newAppearance);
+        debugLog('[updateField] New appearance settings:', JSON.stringify(updateData.appearance_settings, null, 2));
       }
       
-      if (options.columnToUpdate === 'all' || options.columnToUpdate === 'appearance_settings') {
-        // Handle appearance settings
-        if (fieldData.appearance_settings || (fieldData as any).appearance) {
-          const newAppearance = fieldData.appearance_settings || (fieldData as any).appearance || {};
-          
-          // Normalize appearance settings
-          const normalizedAppearance = normalizeAppearanceSettings(newAppearance);
-          
-          // Apply merge strategy
-          if (options.mergeStrategy === 'deep' && currentField.appearance_settings) {
-            updateData.appearance_settings = deepMerge(currentField.appearance_settings, normalizedAppearance);
-            
-            // Log differences for debugging
-            console.log('Appearance settings deep merge:');
-            logObjectDiff(currentField.appearance_settings, updateData.appearance_settings);
-          } else {
-            updateData.appearance_settings = normalizedAppearance;
-          }
-          
-          debugLog('[updateField] New appearance settings:', JSON.stringify(updateData.appearance_settings, null, 2));
-        }
+      // Handle advanced settings
+      if (fieldData.advanced_settings || (fieldData as any).advanced) {
+        const newAdvanced = fieldData.advanced_settings || (fieldData as any).advanced || {};
+        updateData.advanced_settings = newAdvanced;
+        debugLog('[updateField] New advanced settings:', JSON.stringify(newAdvanced, null, 2));
       }
       
-      if (options.columnToUpdate === 'all' || options.columnToUpdate === 'advanced_settings') {
-        // Handle advanced settings
-        if (fieldData.advanced_settings || (fieldData as any).advanced) {
-          const newAdvanced = fieldData.advanced_settings || (fieldData as any).advanced || {};
-          
-          // Apply merge strategy
-          if (options.mergeStrategy === 'deep' && currentField.advanced_settings) {
-            updateData.advanced_settings = deepMerge(currentField.advanced_settings, newAdvanced);
-            
-            // Log differences for debugging
-            console.log('Advanced settings deep merge:');
-            logObjectDiff(currentField.advanced_settings, updateData.advanced_settings);
-          } else {
-            updateData.advanced_settings = newAdvanced;
-          }
-          
-          debugLog('[updateField] New advanced settings:', JSON.stringify(updateData.advanced_settings, null, 2));
-        }
+      // Handle UI options
+      if (fieldData.ui_options_settings || (fieldData as any).ui_options) {
+        const newUiOptions = fieldData.ui_options_settings || (fieldData as any).ui_options || {};
+        updateData.ui_options_settings = newUiOptions;
+        debugLog('[updateField] New UI options:', JSON.stringify(newUiOptions, null, 2));
       }
       
-      if (options.columnToUpdate === 'all' || options.columnToUpdate === 'ui_options_settings') {
-        // Handle UI options
-        if (fieldData.ui_options_settings || (fieldData as any).ui_options) {
-          const newUiOptions = fieldData.ui_options_settings || (fieldData as any).ui_options || {};
-          
-          // Apply merge strategy
-          if (options.mergeStrategy === 'deep' && currentField.ui_options_settings) {
-            updateData.ui_options_settings = deepMerge(currentField.ui_options_settings, newUiOptions);
-            
-            // Log differences for debugging
-            console.log('UI options deep merge:');
-            logObjectDiff(currentField.ui_options_settings, updateData.ui_options_settings);
-          } else {
-            updateData.ui_options_settings = newUiOptions;
-          }
-          
-          debugLog('[updateField] New UI options:', JSON.stringify(updateData.ui_options_settings, null, 2));
-        }
-      }
-      
-      if (options.columnToUpdate === 'all' || options.columnToUpdate === 'general_settings') {
-        // Handle general settings
-        if (fieldData.general_settings) {
-          // Apply merge strategy
-          if (options.mergeStrategy === 'deep' && currentField.general_settings) {
-            updateData.general_settings = deepMerge(currentField.general_settings, fieldData.general_settings);
-            
-            // Log differences for debugging
-            console.log('General settings deep merge:');
-            logObjectDiff(currentField.general_settings, updateData.general_settings);
-          } else {
-            updateData.general_settings = fieldData.general_settings;
-          }
-          
-          debugLog('[updateField] New general settings:', JSON.stringify(updateData.general_settings, null, 2));
-        }
-      }
-      
-      // If no fields to update, return the current field
-      if (Object.keys(updateData).length === 0) {
-        console.log('No fields to update, returning current field data.');
-        return mapSupabaseField(currentField);
+      // Handle general settings
+      if (fieldData.general_settings) {
+        updateData.general_settings = fieldData.general_settings;
+        debugLog('[updateField] New general settings:', JSON.stringify(fieldData.general_settings, null, 2));
       }
       
       // Update the field in the database

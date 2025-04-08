@@ -1,85 +1,39 @@
 
-import React, { useState, useCallback } from 'react';
+import React from 'react';
 import { useFieldSettings } from '@/contexts/FieldSettingsContext';
-import { toast } from '@/hooks/use-toast';
-import { updateField } from '@/services/CollectionService';
 import { AdvancedSettings } from '@/utils/fieldSettingsHelpers';
 
-export function AdvancedSettingsMiddleware({ 
-  children 
-}: { 
+interface AdvancedSettingsMiddlewareProps {
   children: (props: {
     settings: AdvancedSettings;
-    updateSettings: (settings: AdvancedSettings) => void;
+    updateSettings: (settings: AdvancedSettings) => Promise<void>;
     saveToDatabase: (settings: AdvancedSettings) => Promise<void>;
     isSaving: boolean;
-  }) => React.ReactNode
-}) {
-  const { 
-    fieldId, 
-    collectionId,
-    advanced, 
-    updateAdvanced,
-    saveToDatabase: contextSaveToDatabase
-  } = useFieldSettings();
+  }) => React.ReactNode;
+}
+
+/**
+ * Middleware component for advanced settings
+ * Provides advanced settings and update methods to children
+ */
+export function AdvancedSettingsMiddleware({
+  children
+}: AdvancedSettingsMiddlewareProps) {
+  const { advanced, updateAdvanced, saveToDatabase, isSaving } = useFieldSettings();
   
-  const [isSaving, setIsSaving] = useState(false);
-  
-  // Function to update advanced settings locally
-  const updateSettings = useCallback((newSettings: AdvancedSettings) => {
-    console.log('Updating advanced settings:', newSettings);
-    updateAdvanced(newSettings);
-  }, [updateAdvanced]);
-  
-  // Function to save advanced settings to the database
-  const saveToDatabase = useCallback(async (settings: AdvancedSettings): Promise<void> => {
-    if (!fieldId || !collectionId) {
-      toast({
-        title: "Missing field or collection ID",
-        description: "Cannot save to database without field and collection IDs",
-        variant: "destructive"
-      });
-      return Promise.reject(new Error("Missing field or collection ID"));
-    }
-    
-    setIsSaving(true);
-    
-    try {
-      console.log('Saving advanced settings to database:', settings);
-      
-      // Use the new updateField function with options
-      await updateField(
-        collectionId,
-        fieldId, 
-        { advanced_settings: settings },
-        { columnToUpdate: 'advanced_settings', mergeStrategy: 'deep' }
-      );
-      
-      // Also update our context state
-      await updateAdvanced(settings);
-      
-      // Also use the context's saveToDatabase for additional effects if needed
-      await contextSaveToDatabase('advanced', settings);
-      
-      return Promise.resolve();
-    } catch (error) {
-      console.error('Error saving advanced settings to database:', error);
-      throw error;
-    } finally {
-      setIsSaving(false);
-    }
-  }, [fieldId, collectionId, updateAdvanced, contextSaveToDatabase]);
+  // Create a specialized save function for advanced settings
+  const saveAdvancedToDatabase = async (settings: AdvancedSettings) => {
+    return saveToDatabase('advanced', settings);
+  };
   
   return (
     <>
-      {children({ 
-        settings: advanced, 
-        updateSettings, 
-        saveToDatabase,
+      {children({
+        settings: advanced,
+        updateSettings: updateAdvanced,
+        saveToDatabase: saveAdvancedToDatabase,
         isSaving
       })}
     </>
   );
 }
-
-export default AdvancedSettingsMiddleware;

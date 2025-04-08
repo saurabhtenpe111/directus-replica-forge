@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { 
   getNormalizedFieldSettings, 
@@ -214,36 +213,11 @@ export const FieldSettingsProvider: React.FC<{
       console.log('[FieldSettingsContext] Field ID:', fieldId);
       console.log('[FieldSettingsContext] Collection ID:', collectionId);
       
-      // Create the field data object using our helper
+      // Create the field data object using our helper for the new columns
       const fieldUpdateData = createColumnUpdatePayload(section, settings);
       
-      // Determine which column to update based on the section
-      let columnToUpdate: any = 'all';
-      switch (section) {
-        case 'validation':
-          columnToUpdate = 'validation_settings';
-          break;
-        case 'appearance':
-          columnToUpdate = 'appearance_settings';
-          break;
-        case 'advanced':
-          columnToUpdate = 'advanced_settings';
-          break;
-        case 'ui_options':
-          columnToUpdate = 'ui_options_settings';
-          break;
-        case 'general':
-          columnToUpdate = 'general_settings';
-          break;
-      }
-      
-      // Use the new updateField function with options for deep merging
-      const updatedField = await updateField(
-        collectionId, 
-        fieldId, 
-        fieldUpdateData,
-        { columnToUpdate, mergeStrategy: 'deep' }
-      );
+      // Call the service to update the field in the database
+      const updatedField = await updateField(collectionId, fieldId, fieldUpdateData);
       
       console.log('[FieldSettingsContext] Field updated in database:', updatedField);
       
