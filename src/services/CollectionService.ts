@@ -82,6 +82,11 @@ export interface CollectionField {
     helpText?: string;
     [key: string]: any;
   };
+  validation_settings?: ValidationSettings;
+  appearance_settings?: AppearanceSettings;
+  advanced_settings?: Record<string, any>;
+  ui_options_settings?: Record<string, any>;
+  general_settings?: Record<string, any>;
   validation?: ValidationSettings;
   appearance?: AppearanceSettings;
   advanced?: Record<string, any>;
@@ -120,15 +125,20 @@ const mapSupabaseField = (field: Database['public']['Tables']['fields']['Row']):
     settings
   });
 
+  // Extract settings from both the old and new structure
+  const validationSettings = field.validation_settings as ValidationSettings || settings.validation || {};
+  const appearanceSettings = field.appearance_settings as AppearanceSettings || settings.appearance || {};
+  const advancedSettings = field.advanced_settings as AdvancedSettings || settings.advanced || {};
+  const uiOptionsSettings = field.ui_options_settings as Record<string, any> || settings.ui_options || {};
+  const generalSettings = field.general_settings as Record<string, any> || {};
+
   // Log appearance settings specifically
-  if (settings.appearance) {
-    console.log(`Appearance settings for field ${field.name}:`, JSON.stringify(settings.appearance, null, 2));
+  if (appearanceSettings) {
+    console.log(`Appearance settings for field ${field.name}:`, JSON.stringify(appearanceSettings, null, 2));
   }
   
   // Ensure appearance settings are properly normalized
-  if (settings.appearance) {
-    settings.appearance = normalizeAppearanceSettings(settings.appearance);
-  }
+  const normalizedAppearance = normalizeAppearanceSettings(appearanceSettings);
 
   return {
     id: field.id,
@@ -138,12 +148,22 @@ const mapSupabaseField = (field: Database['public']['Tables']['fields']['Row']):
     description: field.description || undefined,
     required: field.required || false,
     settings: settings,
+    validation_settings: validationSettings,
+    appearance_settings: normalizedAppearance,
+    advanced_settings: advancedSettings,
+    ui_options_settings: uiOptionsSettings,
+    general_settings: generalSettings,
     sort_order: field.sort_order || 0,
     collection_id: field.collection_id || undefined,
+    
+    // Legacy structure references for backward compatibility
+    validation: validationSettings,
+    appearance: normalizedAppearance,
+    advanced: advancedSettings,
+    ui_options: uiOptionsSettings,
   };
 };
 
-// Enhanced deep merge function with better handling of arrays and null values
 const deepMerge = (target: any, source: any): any => {
   // Return source if target is null/undefined or not an object
   if (target === null || target === undefined || typeof target !== 'object') {
@@ -190,15 +210,12 @@ const deepMerge = (target: any, source: any): any => {
   return output;
 };
 
-// Helper to check if value is an object
 const isObject = (item: any): boolean => {
   return (item && typeof item === 'object' && !Array.isArray(item));
 };
 
-// Enable debug mode for development
 const DEBUG_ENABLED = true;
 
-// Debug function to log detailed information when enabled
 const debugLog = (message: string, data?: any) => {
   if (DEBUG_ENABLED) {
     console.log(`[CollectionService] ${message}`, data ? data : '');
@@ -253,45 +270,72 @@ export const CollectionService = {
 
       const { apiId, ...restData } = fieldData;
 
-      // Ensure we have a settings object
-      const settings: Record<string, any> = { ...(fieldData.settings || {}) };
-
-      // Move any properties that should be inside settings to the proper location
-      if ('validation' in fieldData) {
-        settings.validation = fieldData.validation;
-        delete (restData as any).validation;
-      }
-
-      if ('appearance' in fieldData) {
-        settings.appearance = fieldData.appearance;
-        delete (restData as any).appearance;
-      }
-
-      if ('advanced' in fieldData) {
-        settings.advanced = fieldData.advanced;
-        delete (restData as any).advanced;
-      }
-
-      if ('helpText' in fieldData) {
-        settings.helpText = fieldData.helpText;
-        delete (restData as any).helpText;
-      }
-
-      if ('ui_options' in fieldData) {
-        settings.ui_options = fieldData.ui_options;
-        delete (restData as any).ui_options;
-      }
-
-      const field = {
+      // Set up field data using the new columns structure
+      const field: any = {
         name: fieldData.name || 'New Field',
         api_id: apiId || fieldData.name?.toLowerCase().replace(/\s+/g, '_') || 'new_field',
         type: fieldData.type || 'text',
         collection_id: collectionId,
         description: fieldData.description || null,
         required: fieldData.required || false,
-        settings: settings,
         sort_order: highestSortOrder, // Place the new field at the bottom
+      
+        // Initialize empty objects for the new columns
+        validation_settings: {},
+        appearance_settings: {},
+        advanced_settings: {},
+        ui_options_settings: {},
+        general_settings: {},
       };
+      
+      // Process validation settings
+      if (fieldData.validation || fieldData.settings?.validation) {
+        field.validation_settings = fieldData.validation || fieldData.settings?.validation || {};
+      }
+      
+      // Process appearance settings
+      if (fieldData.appearance || fieldData.settings?.appearance) {
+        field.appearance_settings = normalizeAppearanceSettings(fieldData.appearance || fieldData.settings?.appearance || {});
+      }
+      
+      // Process advanced settings
+      if (fieldData.advanced || fieldData.settings?.advanced) {
+        field.advanced_settings = fieldData.advanced || fieldData.settings?.advanced || {};
+      }
+      
+      // Process UI options
+      if (fieldData.ui_options || fieldData.settings?.ui_options) {
+        field.ui_options_settings = fieldData.ui_options || fieldData.settings?.ui_options || {};
+      }
+      
+      // Process general settings
+      if (fieldData.general_settings) {
+        field.general_settings = fieldData.general_settings;
+      }
+      
+      // Maintain backward compatibility with settings
+      const settings: Record<string, any> = {};
+      
+      if (field.validation_settings && Object.keys(field.validation_settings).length > 0) {
+        settings.validation = field.validation_settings;
+      }
+      
+      if (field.appearance_settings && Object.keys(field.appearance_settings).length > 0) {
+        settings.appearance = field.appearance_settings;
+      }
+      
+      if (field.advanced_settings && Object.keys(field.advanced_settings).length > 0) {
+        settings.advanced = field.advanced_settings;
+      }
+      
+      if (field.ui_options_settings && Object.keys(field.ui_options_settings).length > 0) {
+        settings.ui_options = field.ui_options_settings;
+      }
+      
+      // Only add settings if we have some data
+      if (Object.keys(settings).length > 0 || fieldData.settings) {
+        field.settings = { ...settings, ...(fieldData.settings || {}) };
+      }
 
       debugLog('Inserting field into database:', field);
 
@@ -345,10 +389,10 @@ export const CollectionService = {
       if (fieldData.required !== undefined) updateData.required = fieldData.required;
       if (fieldData.sort_order !== undefined) updateData.sort_order = fieldData.sort_order;
 
-      // Get current field data to properly merge with updates - CRITICAL STEP
+      // Get current field data to properly merge with updates
       const { data: currentField, error: getCurrentError } = await supabase
         .from('fields')
-        .select('*')  // Select all columns to get complete field data
+        .select('*')
         .eq('id', fieldId)
         .single();
 
@@ -359,111 +403,55 @@ export const CollectionService = {
 
       debugLog(`Current field data from database:`, JSON.stringify(currentField, null, 2));
       
-      // Create a deep copy of the current settings to avoid reference issues
-      const currentSettings = currentField?.settings ? JSON.parse(JSON.stringify(currentField.settings)) : {};
-      
-      debugLog('[updateField] Current settings from database:', JSON.stringify(currentSettings, null, 2));
-      debugLog('[updateField] New field data to merge:', JSON.stringify(fieldData, null, 2));
-      
-      // Initialize settings to update with deep copy of current settings
-      let settingsToUpdate: Record<string, any> = JSON.parse(JSON.stringify(currentSettings));
-      
-      // IMPROVED VALIDATION SETTINGS HANDLING
-      if (fieldData.validation) {
-        debugLog('[updateField] Found validation at root level:', JSON.stringify(fieldData.validation, null, 2));
-        
-        // Create validation object if it doesn't exist
-        if (!settingsToUpdate.validation) {
-          settingsToUpdate.validation = {};
-        }
-        
-        // Deep merge validation settings
-        settingsToUpdate.validation = deepMerge(settingsToUpdate.validation, fieldData.validation);
-        
-        debugLog('[updateField] Merged validation settings:', JSON.stringify(settingsToUpdate.validation, null, 2));
+      // New column-based approach
+    
+      // Handle validation settings
+      if (fieldData.validation_settings || fieldData.validation || fieldData.settings?.validation) {
+        const newValidation = fieldData.validation_settings || fieldData.validation || fieldData.settings?.validation || {};
+        updateData.validation_settings = newValidation;
+        debugLog('[updateField] New validation settings:', JSON.stringify(newValidation, null, 2));
       }
       
-      // Handle other direct properties in fieldData.settings
-      if (fieldData.settings) {
-        debugLog('[updateField] Merging settings object:', JSON.stringify(fieldData.settings, null, 2));
-        
-        // For each property in fieldData.settings, merge it with settingsToUpdate
-        Object.keys(fieldData.settings).forEach(key => {
-          // Skip undefined values
-          if (fieldData.settings![key] === undefined) return;
-          
-          // Special handling for validation to ensure proper deep merging
-          if (key === 'validation') {
-            debugLog('[updateField] Found validation in settings:', JSON.stringify(fieldData.settings!.validation, null, 2));
-            
-            // Ensure validation object exists
-            if (!settingsToUpdate.validation) {
-              settingsToUpdate.validation = {};
-            }
-            
-            // Deep merge validation settings
-            settingsToUpdate.validation = deepMerge(settingsToUpdate.validation, fieldData.settings!.validation);
-            debugLog('[updateField] Merged validation in settings:', JSON.stringify(settingsToUpdate.validation, null, 2));
-          }
-          // Deep merge or assign depending on if both are objects
-          else if (isObject(fieldData.settings![key]) && isObject(settingsToUpdate[key])) {
-            settingsToUpdate[key] = deepMerge(settingsToUpdate[key] || {}, fieldData.settings![key]);
-          } else {
-            settingsToUpdate[key] = fieldData.settings![key];
-          }
-        });
-      }
-      
-      // Process UI options (from either location)
-      if (fieldData.settings?.ui_options || fieldData.ui_options) {
-        const newUiOptions = fieldData.settings?.ui_options || fieldData.ui_options || {};
-        settingsToUpdate.ui_options = deepMerge(settingsToUpdate.ui_options || {}, newUiOptions);
-        debugLog('[updateField] Merged UI options:', JSON.stringify(settingsToUpdate.ui_options, null, 2));
-      }
-      
-      // Handle help text
-      if (fieldData.settings?.helpText !== undefined || fieldData.helpText !== undefined) {
-        settingsToUpdate.helpText = fieldData.settings?.helpText ?? fieldData.helpText;
-      }
-      
-      // Handle appearance settings (from either location)
-      if (fieldData.settings?.appearance || fieldData.appearance) {
-        const newAppearance = fieldData.settings?.appearance || fieldData.appearance || {};
-        
-        debugLog('[updateField] Current appearance:', JSON.stringify(settingsToUpdate.appearance || {}, null, 2));
-        debugLog('[updateField] New appearance to merge:', JSON.stringify(newAppearance, null, 2));
-        
-        // Deep merge appearance settings
-        settingsToUpdate.appearance = deepMerge(settingsToUpdate.appearance || {}, newAppearance);
-        
-        // Ensure UI variant is properly set
-        if (newAppearance.uiVariant) {
-          settingsToUpdate.appearance.uiVariant = validateUIVariant(newAppearance.uiVariant);
-        }
-        
-        debugLog('[updateField] Merged appearance result:', JSON.stringify(settingsToUpdate.appearance, null, 2));
+      // Handle appearance settings
+      if (fieldData.appearance_settings || fieldData.appearance || fieldData.settings?.appearance) {
+        const newAppearance = fieldData.appearance_settings || fieldData.appearance || fieldData.settings?.appearance || {};
+        // Normalize appearance settings
+        updateData.appearance_settings = normalizeAppearanceSettings(newAppearance);
+        debugLog('[updateField] New appearance settings:', JSON.stringify(updateData.appearance_settings, null, 2));
       }
       
       // Handle advanced settings
-      if (fieldData.settings?.advanced || fieldData.advanced) {
-        const newAdvanced = fieldData.settings?.advanced || fieldData.advanced || {};
-        settingsToUpdate.advanced = deepMerge(settingsToUpdate.advanced || {}, newAdvanced);
-        debugLog('[updateField] Merged advanced settings:', JSON.stringify(settingsToUpdate.advanced, null, 2));
+      if (fieldData.advanced_settings || fieldData.advanced || fieldData.settings?.advanced) {
+        const newAdvanced = fieldData.advanced_settings || fieldData.advanced || fieldData.settings?.advanced || {};
+        updateData.advanced_settings = newAdvanced;
+        debugLog('[updateField] New advanced settings:', JSON.stringify(newAdvanced, null, 2));
       }
       
-      // Set the final updated settings
-      updateData.settings = settingsToUpdate;
+      // Handle UI options
+      if (fieldData.ui_options_settings || fieldData.ui_options || fieldData.settings?.ui_options) {
+        const newUiOptions = fieldData.ui_options_settings || fieldData.ui_options || fieldData.settings?.ui_options || {};
+        updateData.ui_options_settings = newUiOptions;
+        debugLog('[updateField] New UI options:', JSON.stringify(newUiOptions, null, 2));
+      }
       
-      // Log the final settings structure being saved
-      debugLog('[updateField] Final settings structure being saved:', JSON.stringify(updateData.settings, null, 2));
+      // Handle general settings
+      if (fieldData.general_settings) {
+        updateData.general_settings = fieldData.general_settings;
+        debugLog('[updateField] New general settings:', JSON.stringify(fieldData.general_settings, null, 2));
+      }
       
-      // Compare before and after for debugging
-      const settingsDiff = {
-        before: currentSettings,
-        after: updateData.settings,
-      };
-      debugLog('[updateField] Settings difference:', JSON.stringify(settingsDiff, null, 2));
-
+      // Legacy settings structure - keep it for backward compatibility
+      if (fieldData.settings) {
+        // Copy the existing settings object to avoid reference issues
+        const currentSettings = currentField?.settings ? JSON.parse(JSON.stringify(currentField.settings)) : {};
+        
+        // Deep merge settings
+        const mergedSettings = deepMerge(currentSettings, fieldData.settings);
+        updateData.settings = mergedSettings;
+        
+        debugLog('[updateField] Merged legacy settings:', JSON.stringify(mergedSettings, null, 2));
+      }
+      
       // Update the field in the database
       const { data, error } = await supabase
         .from('fields')

@@ -1,4 +1,3 @@
-
 /**
  * Helper utilities for accessing and updating field settings consistently
  * across the application.
@@ -93,6 +92,17 @@ export interface UIOptions {
 }
 
 /**
+ * Enhanced field settings structure with dedicated columns
+ */
+export interface FieldSettingsColumns {
+  general_settings?: Record<string, any>;
+  validation_settings?: ValidationSettings;
+  appearance_settings?: AppearanceSettings;
+  advanced_settings?: AdvancedSettings;
+  ui_options_settings?: UIOptions;
+}
+
+/**
  * Get standardized field settings from any potential source/structure
  * @param fieldData The field data which may contain settings in different formats
  * @returns Normalized field settings object
@@ -141,13 +151,39 @@ export function getNormalizedFieldSettings(fieldData: any): FieldSettings {
 }
 
 /**
+ * New helper function to extract settings from the new column structure
+ * @param fieldData The field data object
+ * @returns Normalized field settings object
+ */
+export const getSettingsFromColumns = (fieldData: any): FieldSettings => {
+  // Handle the new columns structure if available
+  if (
+    fieldData.validation_settings ||
+    fieldData.appearance_settings ||
+    fieldData.advanced_settings ||
+    fieldData.ui_options_settings
+  ) {
+    return {
+      validation: fieldData.validation_settings || {},
+      appearance: fieldData.appearance_settings || {},
+      advanced: fieldData.advanced_settings || {},
+      ui_options: fieldData.ui_options_settings || {},
+      general: fieldData.general_settings || {},
+    };
+  }
+
+  // Fall back to the legacy structure
+  return getNormalizedFieldSettings(fieldData);
+};
+
+/**
  * Safely access a specific settings section
  * @param fieldData The field data object
  * @param section The settings section to access
  * @returns The settings section or empty object if not found
  */
 export function getSettingsSection<T = any>(fieldData: any, section: keyof FieldSettings): T {
-  const settings = getNormalizedFieldSettings(fieldData);
+  const settings = getSettingsFromColumns(fieldData);
   return (settings[section] as T) || {} as T;
 }
 
@@ -156,36 +192,64 @@ export function getSettingsSection<T = any>(fieldData: any, section: keyof Field
  * @param fieldData The field data object
  * @returns ValidationSettings object
  */
-export function getValidationSettings(fieldData: any): ValidationSettings {
-  return getSettingsSection<ValidationSettings>(fieldData, 'validation');
-}
+export const getValidationSettings = (fieldData: any): ValidationSettings => {
+  if (fieldData?.validation_settings) {
+    return fieldData.validation_settings;
+  } else if (fieldData?.validation) {
+    return fieldData.validation;
+  } else if (fieldData?.settings?.validation) {
+    return fieldData.settings.validation;
+  }
+  return {};
+};
 
 /**
  * Get appearance settings from field data
  * @param fieldData The field data object
  * @returns AppearanceSettings object
  */
-export function getAppearanceSettings(fieldData: any): AppearanceSettings {
-  return getSettingsSection<AppearanceSettings>(fieldData, 'appearance');
-}
+export const getAppearanceSettings = (fieldData: any): AppearanceSettings => {
+  if (fieldData?.appearance_settings) {
+    return fieldData.appearance_settings;
+  } else if (fieldData?.appearance) {
+    return fieldData.appearance;
+  } else if (fieldData?.settings?.appearance) {
+    return fieldData.settings.appearance;
+  }
+  return {};
+};
 
 /**
  * Get advanced settings from field data
  * @param fieldData The field data object
  * @returns AdvancedSettings object
  */
-export function getAdvancedSettings(fieldData: any): AdvancedSettings {
-  return getSettingsSection<AdvancedSettings>(fieldData, 'advanced');
-}
+export const getAdvancedSettings = (fieldData: any): AdvancedSettings => {
+  if (fieldData?.advanced_settings) {
+    return fieldData.advanced_settings;
+  } else if (fieldData?.advanced) {
+    return fieldData.advanced;
+  } else if (fieldData?.settings?.advanced) {
+    return fieldData.settings.advanced;
+  }
+  return {};
+};
 
 /**
  * Get UI options from field data
  * @param fieldData The field data object
  * @returns UIOptions object
  */
-export function getUIOptions(fieldData: any): UIOptions {
-  return getSettingsSection<UIOptions>(fieldData, 'ui_options');
-}
+export const getUIOptions = (fieldData: any): UIOptions => {
+  if (fieldData?.ui_options_settings) {
+    return fieldData.ui_options_settings;
+  } else if (fieldData?.ui_options) {
+    return fieldData.ui_options;
+  } else if (fieldData?.settings?.ui_options) {
+    return fieldData.settings.ui_options;
+  }
+  return {};
+};
 
 /**
  * Updates a field with new settings
@@ -228,18 +292,44 @@ export function updateFieldSettings(
  * @param newSettings The new settings for that section
  * @returns A properly structured update payload
  */
-export function createUpdatePayload(
+export const createColumnUpdatePayload = (
   section: keyof FieldSettings,
-  newSettings: any
-): any {
-  const payload: any = {
-    settings: {}
+  settings: any
+): Partial<FieldSettingsColumns & { settings?: any }> => {
+  // Map the section to the appropriate column
+  switch (section) {
+    case 'validation':
+      return { validation_settings: settings };
+    case 'appearance':
+      return { appearance_settings: settings };
+    case 'advanced':
+      return { advanced_settings: settings };
+    case 'ui_options':
+      return { ui_options_settings: settings };
+    case 'general':
+      return { general_settings: settings };
+    default:
+      // For backward compatibility
+      return createUpdatePayload(section, settings);
+  }
+};
+
+/**
+ * Create update payload for the new column structure
+ * @param section The settings section being updated
+ * @param newSettings The new settings for that section
+ * @returns A properly structured update payload
+ */
+export const createUpdatePayload = (
+  section: keyof FieldSettings,
+  settings: any
+): { settings: any } => {
+  return {
+    settings: {
+      [section]: settings
+    }
   };
-  
-  payload.settings[section] = newSettings;
-  
-  return payload;
-}
+};
 
 /**
  * Standardizes the field structure for database operations

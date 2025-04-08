@@ -8,6 +8,7 @@ import {
   getAdvancedSettings,
   getUIOptions,
   createUpdatePayload,
+  createColumnUpdatePayload,
   FieldSettings,
   ValidationSettings,
   AppearanceSettings, 
@@ -80,7 +81,15 @@ export const FieldSettingsProvider: React.FC<{
   const updateValidation = useCallback(async (settings: ValidationSettings): Promise<void> => {
     try {
       console.log('[FieldSettingsContext] Updating validation settings:', settings);
-      const updatedFieldData = updateFieldSettings(fieldData, 'validation', settings);
+      
+      // Update the field data with the new validation settings
+      const updatedFieldData = {
+        ...fieldData,
+        validation_settings: settings,
+        // For backward compatibility
+        validation: settings
+      };
+      
       setFieldData(updatedFieldData);
       
       if (onFieldUpdate) {
@@ -103,7 +112,15 @@ export const FieldSettingsProvider: React.FC<{
   const updateAppearance = useCallback(async (settings: AppearanceSettings): Promise<void> => {
     try {
       console.log('[FieldSettingsContext] Updating appearance settings:', settings);
-      const updatedFieldData = updateFieldSettings(fieldData, 'appearance', settings);
+      
+      // Update the field data with the new appearance settings
+      const updatedFieldData = {
+        ...fieldData,
+        appearance_settings: settings,
+        // For backward compatibility
+        appearance: settings
+      };
+      
       setFieldData(updatedFieldData);
       
       if (onFieldUpdate) {
@@ -126,7 +143,15 @@ export const FieldSettingsProvider: React.FC<{
   const updateAdvanced = useCallback(async (settings: AdvancedSettings): Promise<void> => {
     try {
       console.log('[FieldSettingsContext] Updating advanced settings:', settings);
-      const updatedFieldData = updateFieldSettings(fieldData, 'advanced', settings);
+      
+      // Update the field data with the new advanced settings
+      const updatedFieldData = {
+        ...fieldData,
+        advanced_settings: settings,
+        // For backward compatibility
+        advanced: settings
+      };
+      
       setFieldData(updatedFieldData);
       
       if (onFieldUpdate) {
@@ -149,7 +174,15 @@ export const FieldSettingsProvider: React.FC<{
   const updateUIOptions = useCallback(async (options: UIOptions): Promise<void> => {
     try {
       console.log('[FieldSettingsContext] Updating UI options:', options);
-      const updatedFieldData = updateFieldSettings(fieldData, 'ui_options', options);
+      
+      // Update the field data with the new UI options
+      const updatedFieldData = {
+        ...fieldData,
+        ui_options_settings: options,
+        // For backward compatibility
+        ui_options: options
+      };
+      
       setFieldData(updatedFieldData);
       
       if (onFieldUpdate) {
@@ -168,7 +201,7 @@ export const FieldSettingsProvider: React.FC<{
     }
   }, [fieldData, onFieldUpdate]);
   
-  // Save a specific section to the database
+  // Save a specific section to the database using the new column structure
   const saveToDatabase = useCallback(async (
     section: keyof FieldSettings, 
     settings: any
@@ -190,8 +223,8 @@ export const FieldSettingsProvider: React.FC<{
       console.log('[FieldSettingsContext] Field ID:', fieldId);
       console.log('[FieldSettingsContext] Collection ID:', collectionId);
       
-      // Create the field data object using our helper
-      const fieldUpdateData = createUpdatePayload(section, settings);
+      // Create the field data object using our helper for the new columns
+      const fieldUpdateData = createColumnUpdatePayload(section, settings);
       
       // Call the service to update the field in the database
       const updatedField = await updateField(collectionId, fieldId, fieldUpdateData);
@@ -200,11 +233,36 @@ export const FieldSettingsProvider: React.FC<{
       
       // Update local state with the response from the database
       if (updatedField) {
-        // Extract the section from the response
-        const updatedSettings = updatedField.settings?.[section] || settings;
+        // Extract the updated settings based on the section
+        let updatedSettings;
+        switch (section) {
+          case 'validation':
+            updatedSettings = updatedField.validation_settings || updatedField.validation || settings;
+            break;
+          case 'appearance':
+            updatedSettings = updatedField.appearance_settings || updatedField.appearance || settings;
+            break;
+          case 'advanced':
+            updatedSettings = updatedField.advanced_settings || updatedField.advanced || settings;
+            break;
+          case 'ui_options':
+            updatedSettings = updatedField.ui_options_settings || updatedField.ui_options || settings;
+            break;
+          case 'general':
+            updatedSettings = updatedField.general_settings || settings;
+            break;
+          default:
+            updatedSettings = updatedField.settings?.[section] || settings;
+        }
         
-        // Update the field data with the response
-        const updatedFieldData = updateFieldSettings(fieldData, section, updatedSettings);
+        // Update the field data with the new settings
+        const updatedFieldData = {
+          ...fieldData,
+          [`${section}_settings`]: updatedSettings,
+          // For backward compatibility
+          [section]: updatedSettings
+        };
+        
         setFieldData(updatedFieldData);
         
         if (onFieldUpdate) {
