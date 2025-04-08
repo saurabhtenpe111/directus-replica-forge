@@ -15,6 +15,7 @@ export default function CollectionPreview() {
   const [fields, setFields] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [collectionName, setCollectionName] = useState("Collection");
 
   const handleBackClick = () => {
     navigate(`/collections/${collectionId}/fields`);
@@ -108,8 +109,9 @@ export default function CollectionPreview() {
           <div className="bg-white rounded-lg shadow">
             <div className="p-6">
               <CollectionPreviewForm
-                collectionId={collectionId || ""}
                 fields={fields}
+                name={collectionName}
+                collectionId={collectionId || ""}
                 isLoading={false}
                 error={error}
                 onPreviewSave={handleSavePreview}

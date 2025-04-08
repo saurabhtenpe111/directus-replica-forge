@@ -58,7 +58,9 @@ import {
 import { FieldSettingsManager } from '@/components/fields/FieldSettingsManager';
 
 // Define the Field type that will be used in this component
-interface Field extends CollectionField {}
+interface Field extends CollectionField {
+  required: boolean; // Make sure required is non-optional
+}
 
 export interface FieldType {
   id: string;
@@ -294,6 +296,26 @@ const FieldConfiguration: React.FC = () => {
     setSelectedField(null);
   };
   
+  const renderCollectionPreview = () => {
+    return (
+      <CollectionPreviewForm 
+        fields={fields as Field[]} 
+        name={collection?.title || "Collection"}
+        collectionId={collectionId}
+      />
+    );
+  };
+
+  const renderFieldTypeSelector = () => {
+    return (
+      <FieldTypeSelector 
+        fieldTypes={fieldTypes}
+        selectedType={selectedFieldType}
+        onSelect={handleFieldTypeSelect}
+      />
+    );
+  };
+
   const configTabs = selectedField ? [
     { id: "general", label: "General", icon: <FileJson className="h-4 w-4 mr-2" /> },
     { id: "validation", label: "Validation", icon: <FileType className="h-4 w-4 mr-2" /> },
@@ -302,7 +324,7 @@ const FieldConfiguration: React.FC = () => {
   ] : [
     { id: "general", label: "General", icon: <FileJson className="h-4 w-4 mr-2" /> }
   ];
-  
+
   if (fieldConfigOpen) {
     return (
       <MainLayout>
@@ -464,7 +486,7 @@ const FieldConfiguration: React.FC = () => {
                     </div>
                   ) : fields.length > 0 ? (
                     <FieldList
-                      fields={fields}
+                      fields={fields as Field[]}
                       onEdit={handleFieldEdit}
                       onDelete={(field) => {
                         setSelectedField(field as Field);
@@ -474,7 +496,7 @@ const FieldConfiguration: React.FC = () => {
                         try {
                           await CollectionService.updateFieldOrder(
                             collectionId!,
-                            orderedFields.map((f, i) => ({ id: f.id, sort_order: i }))
+                            orderedFields.map((f: any, i: number) => ({ id: f.id, sort_order: i }))
                           );
                           refetchFields();
                           toast({
@@ -508,11 +530,7 @@ const FieldConfiguration: React.FC = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <FieldTypeSelector 
-                    fieldTypes={fieldTypes}
-                    selectedType={selectedFieldType}
-                    onSelect={handleFieldTypeSelect}
-                  />
+                  {renderFieldTypeSelector()}
                 </CardContent>
               </Card>
             </div>
@@ -528,10 +546,7 @@ const FieldConfiguration: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <CollectionPreviewForm 
-                fields={fields as Field[]} 
-                name={collection?.title || "Collection"}
-              />
+              {renderCollectionPreview()}
             </CardContent>
           </Card>
         </TabsContent>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { CollectionService } from '@/services/CollectionService';
@@ -63,8 +63,8 @@ const FieldDebug: React.FC = () => {
     return fields.find(field => field.id === selectedFieldId);
   };
 
-  const someFunction = (field) => {
-    return field.api_id;
+  const someFunction = (field: any) => {
+    return field.api_id || field.apiId;
   };
 
   if (!collectionId) {

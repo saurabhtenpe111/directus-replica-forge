@@ -16,13 +16,23 @@ interface Field {
 
 interface FieldListProps {
   fields: Field[];
-  onSelectField: (fieldId: string) => void;
-  onDeleteField?: (fieldId: string) => void;
-  selectedFieldId: string | null;
+  onSelectField?: (fieldId: string) => void;
+  onEdit?: (field: Field) => void;
+  onDelete?: (field: any) => void;
+  onReorder?: (orderedFields: any) => Promise<void>;
+  selectedFieldId?: string | null;
   collectionId?: string;
 }
 
-export function FieldList({ fields, onSelectField, onDeleteField, selectedFieldId, collectionId }: FieldListProps) {
+export function FieldList({ 
+  fields, 
+  onSelectField, 
+  onEdit, 
+  onDelete, 
+  onReorder,
+  selectedFieldId, 
+  collectionId 
+}: FieldListProps) {
   const [draggingField, setDraggingField] = useState<string | null>(null);
   const [orderedFields, setOrderedFields] = useState<Field[]>(fields);
   
@@ -76,7 +86,9 @@ export function FieldList({ fields, onSelectField, onDeleteField, selectedFieldI
     setDraggingField(null);
     
     // Save the new order to the database
-    if (collectionId) {
+    if (onReorder) {
+      await onReorder(updatedFields);
+    } else if (collectionId) {
       const fieldOrders = updatedFields.map((field, index) => ({
         id: field.id,
         sort_order: index
@@ -94,9 +106,17 @@ export function FieldList({ fields, onSelectField, onDeleteField, selectedFieldI
     setDraggingField(null);
   };
 
-  const handleDeleteField = (fieldId: string) => {
-    if (onDeleteField) {
-      onDeleteField(fieldId);
+  const handleFieldClick = (field: Field) => {
+    if (onSelectField) {
+      onSelectField(field.id);
+    } else if (onEdit) {
+      onEdit(field);
+    }
+  };
+
+  const handleDeleteField = (fieldId: string, field: Field) => {
+    if (onDelete) {
+      onDelete(field);
     }
   };
 
@@ -123,7 +143,7 @@ export function FieldList({ fields, onSelectField, onDeleteField, selectedFieldI
           </div>
           <div 
             className="flex-1"
-            onClick={() => onSelectField(field.id)}
+            onClick={() => handleFieldClick(field)}
           >
             <div className="flex items-center">
               <span className="font-medium">{field.name}</span>
@@ -134,13 +154,13 @@ export function FieldList({ fields, onSelectField, onDeleteField, selectedFieldI
             <div className="text-xs text-gray-500 mt-1">Type: {field.type}</div>
           </div>
           <div className="flex items-center gap-2">
-            {onDeleteField && (
+            {onDelete && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleDeleteField(field.id);
+                  handleDeleteField(field.id, field);
                 }}
                 className="text-red-500 hover:text-red-700 hover:bg-red-50"
               >
@@ -153,3 +173,5 @@ export function FieldList({ fields, onSelectField, onDeleteField, selectedFieldI
     </div>
   );
 }
+
+export default FieldList;
