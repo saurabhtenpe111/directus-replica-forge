@@ -26,7 +26,7 @@ import {
   X
 } from 'lucide-react';
 import { FieldAppearancePanel } from '@/components/fields/appearance/FieldAppearancePanel';
-import { FieldValidationPanel } from '@/components/fields/FieldValidationPanel';
+import { FieldValidationPanel } from '@/components/fields/validation/FieldValidationPanel';
 import { FieldAdvancedPanel } from '@/components/fields/FieldAdvancedPanel';
 import { FieldLayoutPanel } from '@/components/fields/FieldLayoutPanel';
 import { Button } from '@/components/ui/button';
@@ -153,6 +153,9 @@ const flatFieldTypes = Object.entries(fieldTypes).flatMap(([category, types]) =>
   types.map(type => ({ ...type, group: category }))
 );
 
-export default function FieldConfiguration() {
-  // ... rest of component implementation remains unchanged
+function FieldConfiguration() {
+  // ... keep existing code (component implementation)
 }
+
+// Make sure to export the component as default
+export default FieldConfiguration;

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { CollectionGrid } from '@/components/collections/CollectionGrid';
@@ -52,7 +51,7 @@ export default function Collections() {
   });
   
   const createCollectionMutation = useMutation({
-    mutationFn: createCollection,
+    mutationFn: (data: any) => createCollection(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['collections'] });
       setIsDialogOpen(false);
@@ -67,14 +66,18 @@ export default function Collections() {
   });
   
   const handleCollectionCreated = async (formData: ExtendedCollectionFormData) => {
-    createCollectionMutation.mutate({
+    const collectionData = {
       name: formData.name,
       apiId: formData.apiId,
       description: formData.description,
-      status: formData.status || 'published',
-      // Include settings if it exists in the formData
-      ...(formData.settings && { settings: formData.settings })
-    });
+      status: formData.status || 'published'
+    };
+    
+    if (formData.settings) {
+      Object.assign(collectionData, { settings: formData.settings });
+    }
+    
+    createCollectionMutation.mutate(collectionData);
     
     toast({
       title: "Collection created",

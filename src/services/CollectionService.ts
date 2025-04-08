@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
 import { normalizeAppearanceSettings, validateUIVariant } from '@/utils/inputAdapters';
@@ -7,17 +6,7 @@ import { AdvancedSettings } from '@/utils/fieldSettingsHelpers';
 
 export interface ValidationSettings {
   required?: boolean;
-  min?: number;
-  max?: number;
-  minLength?: number;
-  maxLength?: number;
-  pattern?: string;
-  email?: boolean;
-  url?: boolean;
-  unique?: boolean;
-  message?: string;
-  maxTags?: number;
-  [key: string]: any;
+  // Add other validation properties
 }
 
 export interface AppearanceSettings {
@@ -71,15 +60,21 @@ export interface CollectionFormData {
 export interface CollectionField {
   id: string;
   name: string;
-  apiId: string;
   type: string;
+  api_id?: string;
   description?: string;
-  required: boolean;
-  validation_settings?: ValidationSettings;
-  appearance_settings?: AppearanceSettings;
-  advanced_settings?: Record<string, any>;
-  ui_options_settings?: Record<string, any>;
-  general_settings?: Record<string, any>;
+  required?: boolean;
+  validation?: any;
+  appearance?: any;
+  advanced?: any;
+  ui_options?: any;
+  general?: any;
+  settings?: any;
+  validation_settings?: any;
+  appearance_settings?: any;
+  advanced_settings?: any;
+  ui_options_settings?: any;
+  general_settings?: any;
   sort_order?: number;
   collection_id?: string;
 }
@@ -136,8 +131,8 @@ const mapSupabaseField = (field: SupabaseFieldRow): CollectionField => {
   return {
     id: field.id,
     name: field.name,
-    apiId: field.api_id,
     type: field.type,
+    api_id: field.api_id,
     description: field.description || undefined,
     required: field.required || false,
     validation_settings: validationSettings,
