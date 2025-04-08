@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -300,7 +299,6 @@ export function FieldAdvancedPanel({
         </TabsContent>
       </Tabs>
 
-      {/* Add Save to Database button if onSaveToDatabase function is provided */}
       {onSaveToDatabase && (
         <div className="flex justify-end space-x-2">
           <button

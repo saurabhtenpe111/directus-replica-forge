@@ -8,7 +8,6 @@ import {
 import { 
   AdvancedSettingsMiddleware 
 } from "./middleware/AdvancedSettingsMiddleware";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface FieldAdvancedTabProps {
   fieldType: string | null;
@@ -26,7 +25,6 @@ export function FieldAdvancedTab({
   onUpdate 
 }: FieldAdvancedTabProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState("settings");
 
   useEffect(() => {
     console.log("[FieldAdvancedTab] Field data received:", fieldData);
@@ -52,22 +50,16 @@ export function FieldAdvancedTab({
     >
       <AdvancedSettingsMiddleware>
         {({ settings, updateSettings, saveToDatabase }) => (
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="mb-4">
-              <TabsTrigger value="settings">Advanced Settings</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="settings">
-              <FieldAdvancedPanel
-                fieldType={fieldType}
-                initialData={settings}
-                onSave={updateSettings}
-                fieldId={fieldId}
-                collectionId={collectionId}
-                onSaveToDatabase={saveToDatabase}
-              />
-            </TabsContent>
-          </Tabs>
+          <div>
+            <FieldAdvancedPanel
+              fieldType={fieldType}
+              initialData={settings}
+              onSave={updateSettings}
+              fieldId={fieldId}
+              collectionId={collectionId}
+              onSaveToDatabase={saveToDatabase}
+            />
+          </div>
         )}
       </AdvancedSettingsMiddleware>
     </FieldSettingsMiddleware>
