@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { CollectionService } from '@/services/CollectionService';
@@ -10,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import { DebugFieldConfigPanel } from '@/components/fields/DebugFieldConfigPanel';
 
-export default function FieldDebug() {
+const FieldDebug: React.FC = () => {
   const { collectionId } = useParams<{ collectionId: string }>();
   const queryClient = useQueryClient();
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
@@ -18,12 +17,10 @@ export default function FieldDebug() {
   const [selectedFieldType, setSelectedFieldType] = useState<string | null>(null);
   const [operationLogs, setOperationLogs] = useState<string[]>([]);
   
-  // Add a log entry
   const addLog = (message: string) => {
     setOperationLogs(prev => [...prev, `${new Date().toISOString()}: ${message}`]);
   };
 
-  // Fetch fields for the collection
   const { data: fields = [], isLoading, error } = useQuery({
     queryKey: ['fields', collectionId],
     queryFn: async () => {
@@ -64,6 +61,10 @@ export default function FieldDebug() {
   const getSelectedField = () => {
     if (!selectedFieldId) return null;
     return fields.find(field => field.id === selectedFieldId);
+  };
+
+  const someFunction = (field) => {
+    return field.api_id;
   };
 
   if (!collectionId) {
@@ -121,7 +122,7 @@ export default function FieldDebug() {
                         <div className="flex items-start justify-between">
                           <div>
                             <p className="font-medium">{field.name}</p>
-                            <p className="text-sm text-gray-500">API ID: {field.apiId}</p>
+                            <p className="text-sm text-gray-500">API ID: {someFunction(field)}</p>
                           </div>
                           <Badge variant="outline">{field.type}</Badge>
                         </div>
@@ -219,4 +220,6 @@ export default function FieldDebug() {
       </div>
     </MainLayout>
   );
-}
+};
+
+export default FieldDebug;

@@ -29,9 +29,12 @@ export function AppearanceSettingsMiddleware({
   // Function to update appearance settings locally
   const updateSettings = useCallback((newSettings: AppearanceSettings) => {
     console.log('Updating appearance settings:', newSettings);
-    // Normalize appearance settings before updating
-    const normalizedSettings = normalizeAppearanceSettings(newSettings);
-    updateAppearance(normalizedSettings);
+    // Ensure the textAlign property is within the allowed values
+    const typedSettings = {
+      ...newSettings,
+      textAlign: (newSettings.textAlign as "left" | "center" | "right") || "left"
+    };
+    updateAppearance(typedSettings);
   }, [updateAppearance]);
   
   // Function to save appearance settings to the database
@@ -50,8 +53,14 @@ export function AppearanceSettingsMiddleware({
     try {
       console.log('Saving appearance settings to database:', settings);
       
+      // Ensure the textAlign property is within the allowed values
+      const typedSettings = {
+        ...settings,
+        textAlign: (settings.textAlign as "left" | "center" | "right") || "left"
+      };
+      
       // Normalize appearance settings before saving
-      const normalizedSettings = normalizeAppearanceSettings(settings);
+      const normalizedSettings = normalizeAppearanceSettings(typedSettings);
       
       // Use the new updateField function with options
       await updateField(

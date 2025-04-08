@@ -1,36 +1,21 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
 import { normalizeAppearanceSettings, validateUIVariant } from '@/utils/inputAdapters';
 import { toast } from '@/hooks/use-toast';
-import { AdvancedSettings } from '@/utils/fieldSettingsHelpers';
+import { 
+  AdvancedSettings,
+  ValidationSettings as HelperValidationSettings,
+  AppearanceSettings as HelperAppearanceSettings
+} from '@/utils/fieldSettingsHelpers';
+import { Json } from '@/integrations/supabase/types';
 
-export interface ValidationSettings {
+export interface ValidationSettings extends HelperValidationSettings {
   required?: boolean;
   // Add other validation properties
 }
 
-export interface AppearanceSettings {
-  uiVariant?: "standard" | "material" | "pill" | "borderless" | "underlined";
-  textAlign?: string;
-  labelPosition?: string;
-  labelWidth?: number;
-  floatLabel?: boolean;
-  filled?: boolean;
-  showBorder?: boolean;
-  showBackground?: boolean;
-  roundedCorners?: string;
-  fieldSize?: string;
-  labelSize?: string;
-  customClass?: string;
-  customCss?: string;
-  colors?: Record<string, string>;
-  isDarkMode?: boolean;
-  responsive?: {
-    mobile?: Record<string, any>;
-    tablet?: Record<string, any>;
-    desktop?: Record<string, any>;
-  };
+export interface AppearanceSettings extends HelperAppearanceSettings {
+  // Include any additional properties not in the helper interface
   [key: string]: any;
 }
 
@@ -64,29 +49,25 @@ export interface CollectionField {
   name: string;
   type: string;
   api_id?: string;
+  apiId?: string; // For compatibility with code that uses apiId
   description?: string;
-  required?: boolean;
-  validation?: any;
-  appearance?: any;
-  advanced?: any;
+  required: boolean; // Changed from optional to required to match Field interface
+  validation?: ValidationSettings;
+  appearance?: AppearanceSettings;
+  advanced?: AdvancedSettings;
   ui_options?: any;
   general?: any;
   settings?: any;
-  validation_settings?: any;
-  appearance_settings?: any;
-  advanced_settings?: any;
+  validation_settings?: ValidationSettings;
+  appearance_settings?: AppearanceSettings;
+  advanced_settings?: AdvancedSettings;
   ui_options_settings?: any;
   general_settings?: any;
   sort_order?: number;
   collection_id?: string;
 }
 
-// Define a new interface for specifying which columns to update
-export interface FieldUpdateOptions {
-  columnToUpdate?: 'validation_settings' | 'appearance_settings' | 'advanced_settings' | 'ui_options_settings' | 'general_settings' | 'all';
-  mergeStrategy?: 'deep' | 'shallow' | 'replace';
-}
-
+// Extending the Database types to include our custom fields
 type SupabaseFieldRow = Database['public']['Tables']['fields']['Row'] & {
   validation_settings?: ValidationSettings;
   appearance_settings?: AppearanceSettings;
@@ -94,6 +75,12 @@ type SupabaseFieldRow = Database['public']['Tables']['fields']['Row'] & {
   ui_options_settings?: Record<string, any>;
   general_settings?: Record<string, any>;
 };
+
+// Define a new interface for specifying which columns to update
+export interface FieldUpdateOptions {
+  columnToUpdate?: 'validation_settings' | 'appearance_settings' | 'advanced_settings' | 'ui_options_settings' | 'general_settings' | 'all';
+  mergeStrategy?: 'deep' | 'shallow' | 'replace';
+}
 
 const mapSupabaseCollection = (collection: Database['public']['Tables']['collections']['Row']): Collection => {
   return {
@@ -141,6 +128,7 @@ const mapSupabaseField = (field: SupabaseFieldRow): CollectionField => {
     name: field.name,
     type: field.type,
     api_id: field.api_id,
+    apiId: field.api_id, // Add apiId for compatibility
     description: field.description || undefined,
     required: field.required || false,
     validation_settings: validationSettings,
@@ -150,10 +138,15 @@ const mapSupabaseField = (field: SupabaseFieldRow): CollectionField => {
     general_settings: generalSettings,
     sort_order: field.sort_order || 0,
     collection_id: field.collection_id || undefined,
+    // Also set the legacy properties for backward compatibility
+    validation: validationSettings,
+    appearance: normalizedAppearance,
+    advanced: advancedSettings,
+    ui_options: uiOptionsSettings,
+    general: generalSettings,
   };
 };
 
-// Helper function for deep merging objects
 const deepMerge = (target: any, source: any): any => {
   if (!isObject(target) || !isObject(source)) {
     return source;
@@ -179,7 +172,6 @@ const deepMerge = (target: any, source: any): any => {
   return output;
 };
 
-// Helper function to log object differences for debugging
 const logObjectDiff = (before: any, after: any, path = '') => {
   if (!isObject(before) || !isObject(after)) {
     if (before !== after) {
@@ -376,7 +368,17 @@ export const CollectionService = {
         throw getCurrentError;
       }
 
-      debugLog(`Current field data from database:`, JSON.stringify(currentField, null, 2));
+      // Ensure the currentField has the necessary properties
+      const extendedField = {
+        ...currentField,
+        validation_settings: currentField.validation_settings || {},
+        appearance_settings: currentField.appearance_settings || {},
+        advanced_settings: currentField.advanced_settings || {},
+        ui_options_settings: currentField.ui_options_settings || {},
+        general_settings: currentField.general_settings || {}
+      } as SupabaseFieldRow;
+
+      debugLog(`Current field data from database:`, JSON.stringify(extendedField, null, 2));
       
       // Initialize update data object
       const updateData: any = {};
@@ -399,12 +401,12 @@ export const CollectionService = {
           const newValidation = fieldData.validation_settings || (fieldData as any).validation || {};
           
           // Apply merge strategy
-          if (options.mergeStrategy === 'deep' && currentField.validation_settings) {
-            updateData.validation_settings = deepMerge(currentField.validation_settings, newValidation);
+          if (options.mergeStrategy === 'deep' && extendedField.validation_settings) {
+            updateData.validation_settings = deepMerge(extendedField.validation_settings, newValidation);
             
             // Log differences for debugging
             console.log('Validation settings deep merge:');
-            logObjectDiff(currentField.validation_settings, updateData.validation_settings);
+            logObjectDiff(extendedField.validation_settings, updateData.validation_settings);
           } else {
             updateData.validation_settings = newValidation;
           }
@@ -422,12 +424,12 @@ export const CollectionService = {
           const normalizedAppearance = normalizeAppearanceSettings(newAppearance);
           
           // Apply merge strategy
-          if (options.mergeStrategy === 'deep' && currentField.appearance_settings) {
-            updateData.appearance_settings = deepMerge(currentField.appearance_settings, normalizedAppearance);
+          if (options.mergeStrategy === 'deep' && extendedField.appearance_settings) {
+            updateData.appearance_settings = deepMerge(extendedField.appearance_settings, normalizedAppearance);
             
             // Log differences for debugging
             console.log('Appearance settings deep merge:');
-            logObjectDiff(currentField.appearance_settings, updateData.appearance_settings);
+            logObjectDiff(extendedField.appearance_settings, updateData.appearance_settings);
           } else {
             updateData.appearance_settings = normalizedAppearance;
           }
@@ -442,12 +444,12 @@ export const CollectionService = {
           const newAdvanced = fieldData.advanced_settings || (fieldData as any).advanced || {};
           
           // Apply merge strategy
-          if (options.mergeStrategy === 'deep' && currentField.advanced_settings) {
-            updateData.advanced_settings = deepMerge(currentField.advanced_settings, newAdvanced);
+          if (options.mergeStrategy === 'deep' && extendedField.advanced_settings) {
+            updateData.advanced_settings = deepMerge(extendedField.advanced_settings, newAdvanced);
             
             // Log differences for debugging
             console.log('Advanced settings deep merge:');
-            logObjectDiff(currentField.advanced_settings, updateData.advanced_settings);
+            logObjectDiff(extendedField.advanced_settings, updateData.advanced_settings);
           } else {
             updateData.advanced_settings = newAdvanced;
           }
@@ -462,12 +464,12 @@ export const CollectionService = {
           const newUiOptions = fieldData.ui_options_settings || (fieldData as any).ui_options || {};
           
           // Apply merge strategy
-          if (options.mergeStrategy === 'deep' && currentField.ui_options_settings) {
-            updateData.ui_options_settings = deepMerge(currentField.ui_options_settings, newUiOptions);
+          if (options.mergeStrategy === 'deep' && extendedField.ui_options_settings) {
+            updateData.ui_options_settings = deepMerge(extendedField.ui_options_settings, newUiOptions);
             
             // Log differences for debugging
             console.log('UI options deep merge:');
-            logObjectDiff(currentField.ui_options_settings, updateData.ui_options_settings);
+            logObjectDiff(extendedField.ui_options_settings, updateData.ui_options_settings);
           } else {
             updateData.ui_options_settings = newUiOptions;
           }
@@ -480,12 +482,12 @@ export const CollectionService = {
         // Handle general settings
         if (fieldData.general_settings) {
           // Apply merge strategy
-          if (options.mergeStrategy === 'deep' && currentField.general_settings) {
-            updateData.general_settings = deepMerge(currentField.general_settings, fieldData.general_settings);
+          if (options.mergeStrategy === 'deep' && extendedField.general_settings) {
+            updateData.general_settings = deepMerge(extendedField.general_settings, fieldData.general_settings);
             
             // Log differences for debugging
             console.log('General settings deep merge:');
-            logObjectDiff(currentField.general_settings, updateData.general_settings);
+            logObjectDiff(extendedField.general_settings, updateData.general_settings);
           } else {
             updateData.general_settings = fieldData.general_settings;
           }

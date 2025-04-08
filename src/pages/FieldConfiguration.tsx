@@ -1,8 +1,7 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { CollectionService, ValidationSettings, CollectionField } from '@/services/CollectionService';
+import { CollectionService, CollectionField } from '@/services/CollectionService';
 import { FieldConfigPanel } from '@/components/fields/FieldConfigPanel';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink } from '@/components/ui/breadcrumb';
@@ -59,20 +58,20 @@ import {
 import { FieldSettingsManager } from '@/components/fields/FieldSettingsManager';
 
 // Define the Field type that will be used in this component
-interface Field extends CollectionField {
-  required: boolean;
-  validation?: ValidationSettingsType;
-  validation_settings?: ValidationSettingsType;
-  appearance?: AppearanceSettings;
-  appearance_settings?: AppearanceSettings;
-  advanced?: AdvancedSettings;
-  advanced_settings?: AdvancedSettings;
-  ui_options?: UIOptions;
-  ui_options_settings?: UIOptions;
-  settings?: any;
+interface Field extends CollectionField {}
+
+export interface FieldType {
+  id: string;
+  name: string;
+  description: string;
+  group?: string;
 }
 
-const fieldTypes = {
+export interface FieldTypeGroup {
+  [key: string]: FieldType[];
+}
+
+const fieldTypes: FieldTypeGroup = {
   'Text & Numbers': [
     { id: 'text', name: 'Input', description: 'Single line text field' },
     { id: 'textarea', name: 'Textarea', description: 'Multi-line text field' },
@@ -169,7 +168,6 @@ const FieldConfiguration: React.FC = () => {
   const [isJSONModalOpen, setIsJSONModalOpen] = useState<boolean>(false);
   const [jsonValue, setJsonValue] = useState<string>('{}');
   
-  // Query for collection fields
   const { 
     data: fields = [], 
     isLoading,
@@ -180,7 +178,6 @@ const FieldConfiguration: React.FC = () => {
     enabled: !!collectionId,
   });
   
-  // Query for collection details
   const { data: collections = [] } = useQuery({
     queryKey: ['collections'],
     queryFn: CollectionService.fetchCollections,
@@ -188,7 +185,6 @@ const FieldConfiguration: React.FC = () => {
   
   const collection = collections.find(c => c.id === collectionId);
   
-  // Mutation for field creation
   const createFieldMutation = useMutation({
     mutationFn: (data: any) => CollectionService.createField(collectionId!, data),
     onSuccess: () => {
@@ -202,7 +198,6 @@ const FieldConfiguration: React.FC = () => {
     },
   });
   
-  // Mutation for field update
   const updateFieldMutation = useMutation({
     mutationFn: (data: any) => CollectionService.updateField(collectionId!, data.id, data),
     onSuccess: () => {
@@ -216,7 +211,6 @@ const FieldConfiguration: React.FC = () => {
     },
   });
   
-  // Mutation for field deletion
   const deleteFieldMutation = useMutation({
     mutationFn: (fieldId: string) => CollectionService.deleteField(collectionId!, fieldId),
     onSuccess: () => {
@@ -230,39 +224,32 @@ const FieldConfiguration: React.FC = () => {
     },
   });
   
-  // Handle field type selection
   const handleFieldTypeSelect = (type: string) => {
     setSelectedFieldType(type);
     setFieldConfigOpen(true);
   };
   
-  // Handle field edit
   const handleFieldEdit = (field: Field) => {
     setSelectedField(field);
     setSelectedFieldType(field.type);
     setFieldConfigOpen(true);
   };
   
-  // Handle field save
   const handleFieldSave = (fieldData: any) => {
     if (selectedField) {
-      // Update existing field
       updateFieldMutation.mutate({
         ...selectedField,
         ...fieldData,
       });
     } else {
-      // Create new field
       createFieldMutation.mutate(fieldData);
     }
   };
   
-  // Handle JSON editor open
   const handleJSONEditorOpen = () => {
     let currentJson = {};
     
     if (selectedField) {
-      // Combine all settings
       const combinedSettings = {
         ...selectedField,
         validation: selectedField.validation || selectedField.validation_settings || {},
@@ -278,7 +265,6 @@ const FieldConfiguration: React.FC = () => {
     setIsJSONModalOpen(true);
   };
   
-  // Handle JSON update
   const handleJSONUpdate = () => {
     try {
       const parsedJson = JSON.parse(jsonValue);
@@ -302,14 +288,12 @@ const FieldConfiguration: React.FC = () => {
     }
   };
   
-  // Close form and reset state
   const handleCloseForm = () => {
     setFieldConfigOpen(false);
     setSelectedFieldType(null);
     setSelectedField(null);
   };
   
-  // Prepare tabs for field configuration
   const configTabs = selectedField ? [
     { id: "general", label: "General", icon: <FileJson className="h-4 w-4 mr-2" /> },
     { id: "validation", label: "Validation", icon: <FileType className="h-4 w-4 mr-2" /> },
@@ -319,7 +303,6 @@ const FieldConfiguration: React.FC = () => {
     { id: "general", label: "General", icon: <FileJson className="h-4 w-4 mr-2" /> }
   ];
   
-  // Use our new FieldSettingsManager component for a more streamlined approach
   if (fieldConfigOpen) {
     return (
       <MainLayout>
@@ -364,7 +347,6 @@ const FieldConfiguration: React.FC = () => {
             onUpdate={handleFieldSave}
           />
           
-          {/* Delete confirmation dialog */}
           <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
             <AlertDialogContent>
               <AlertDialogHeader>
@@ -385,7 +367,6 @@ const FieldConfiguration: React.FC = () => {
             </AlertDialogContent>
           </AlertDialog>
           
-          {/* JSON Editor Dialog */}
           <Dialog open={isJSONModalOpen} onOpenChange={setIsJSONModalOpen}>
             <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
               <DialogHeader>
@@ -416,7 +397,6 @@ const FieldConfiguration: React.FC = () => {
     );
   }
   
-  // Normal view with field list and field type selector
   return (
     <MainLayout>
       <div className="p-4 md:p-6 max-w-full">
@@ -456,7 +436,6 @@ const FieldConfiguration: React.FC = () => {
         
         <TabsContent value="fields" className={cn("mt-0", activeTab !== "fields" && "hidden")}>
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Field List */}
             <div className="lg:col-span-8">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
@@ -520,7 +499,6 @@ const FieldConfiguration: React.FC = () => {
               </Card>
             </div>
             
-            {/* Field Type Selector */}
             <div className="lg:col-span-4">
               <Card>
                 <CardHeader>
@@ -551,8 +529,8 @@ const FieldConfiguration: React.FC = () => {
             </CardHeader>
             <CardContent>
               <CollectionPreviewForm 
-                fields={fields} 
-                collectionName={collection?.title || "Collection"}
+                fields={fields as Field[]} 
+                name={collection?.title || "Collection"}
               />
             </CardContent>
           </Card>
@@ -562,6 +540,4 @@ const FieldConfiguration: React.FC = () => {
   );
 };
 
-// Export the component as default (this fixes the issue)
 export default FieldConfiguration;
-
