@@ -312,9 +312,9 @@ const FieldConfiguration: React.FC = () => {
   const renderFieldTypeSelector = () => {
     return (
       <FieldTypeSelector 
-        fieldTypes={fieldTypes}
-        selectedType={selectedFieldType}
-        onSelect={handleFieldTypeSelect}
+        fieldTypes={flatFieldTypes}
+        onSelectFieldType={handleFieldTypeSelect}
+        activeCategory={undefined}
       />
     );
   };
