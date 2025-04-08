@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -131,7 +130,7 @@ export function FieldAppearancePanel({
       console.log("Field ID:", fieldId);
       console.log("Collection ID:", collectionId);
 
-      // Prepare field update data - use only appearance_settings column
+      // Prepare field update data
       const fieldData = {
         appearance_settings: normalizedSettings
       };

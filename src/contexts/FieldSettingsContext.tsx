@@ -6,6 +6,7 @@ import {
   getAppearanceSettings, 
   getAdvancedSettings,
   getUIOptions,
+  createUpdatePayload,
   createColumnUpdatePayload,
   FieldSettings,
   ValidationSettings,
@@ -84,6 +85,8 @@ export const FieldSettingsProvider: React.FC<{
       const updatedFieldData = {
         ...fieldData,
         validation_settings: settings,
+        // For backward compatibility
+        validation: settings
       };
       
       setFieldData(updatedFieldData);
@@ -113,6 +116,8 @@ export const FieldSettingsProvider: React.FC<{
       const updatedFieldData = {
         ...fieldData,
         appearance_settings: settings,
+        // For backward compatibility
+        appearance: settings
       };
       
       setFieldData(updatedFieldData);
@@ -142,6 +147,8 @@ export const FieldSettingsProvider: React.FC<{
       const updatedFieldData = {
         ...fieldData,
         advanced_settings: settings,
+        // For backward compatibility
+        advanced: settings
       };
       
       setFieldData(updatedFieldData);
@@ -171,6 +178,8 @@ export const FieldSettingsProvider: React.FC<{
       const updatedFieldData = {
         ...fieldData,
         ui_options_settings: options,
+        // For backward compatibility
+        ui_options: options
       };
       
       setFieldData(updatedFieldData);
@@ -239,16 +248,18 @@ export const FieldSettingsProvider: React.FC<{
             updatedSettings = updatedField.ui_options_settings || updatedField.ui_options || settings;
             break;
           case 'general':
-            updatedSettings = updatedField.general_settings || updatedField.general || settings;
+            updatedSettings = updatedField.general_settings || settings;
             break;
           default:
-            updatedSettings = settings;
+            updatedSettings = updatedField.settings?.[section] || settings;
         }
         
         // Update the field data with the new settings
         const updatedFieldData = {
           ...fieldData,
           [`${section}_settings`]: updatedSettings,
+          // For backward compatibility
+          [section]: updatedSettings
         };
         
         setFieldData(updatedFieldData);

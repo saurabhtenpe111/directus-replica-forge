@@ -25,16 +25,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Link } from 'react-router-dom';
 
-// Extended interface for form data to include settings
-interface ExtendedCollectionFormData {
-  name: string;
-  apiId: string;
-  description?: string;
-  status?: string;
-  settings?: any;
-  // Add any other fields that might be needed
-}
-
 export default function Collections() {
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -51,7 +41,7 @@ export default function Collections() {
   });
   
   const createCollectionMutation = useMutation({
-    mutationFn: (data: any) => createCollection(data),
+    mutationFn: createCollection,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['collections'] });
       setIsDialogOpen(false);
@@ -65,19 +55,14 @@ export default function Collections() {
     }
   });
   
-  const handleCollectionCreated = async (formData: ExtendedCollectionFormData) => {
-    const collectionData = {
+  const handleCollectionCreated = async (formData: any) => {
+    createCollectionMutation.mutate({
       name: formData.name,
       apiId: formData.apiId,
       description: formData.description,
-      status: formData.status || 'published'
-    };
-    
-    if (formData.settings) {
-      Object.assign(collectionData, { settings: formData.settings });
-    }
-    
-    createCollectionMutation.mutate(collectionData);
+      status: formData.status || 'published',
+      settings: formData.settings
+    });
     
     toast({
       title: "Collection created",

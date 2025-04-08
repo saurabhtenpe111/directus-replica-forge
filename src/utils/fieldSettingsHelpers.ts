@@ -1,3 +1,4 @@
+
 /**
  * Helper utilities for accessing and updating field settings consistently
  * across the application.
@@ -133,65 +134,77 @@ export function getNormalizedFieldSettings(fieldData: any): FieldSettings {
   
   const settings: FieldSettings = {};
 
-  // Handle validation settings - prioritize _settings columns
-  if (fieldData.validation_settings) {
-    settings.validation = fieldData.validation_settings;
-  } else if (fieldData.validation) {
+  // Handle validation settings
+  if (fieldData.validation) {
     settings.validation = fieldData.validation;
+  } else if (fieldData.settings?.validation) {
+    settings.validation = fieldData.settings.validation;
   }
 
-  // Handle appearance settings - prioritize _settings columns
-  if (fieldData.appearance_settings) {
-    settings.appearance = fieldData.appearance_settings;
-  } else if (fieldData.appearance) {
+  // Handle appearance settings
+  if (fieldData.appearance) {
     settings.appearance = fieldData.appearance;
+  } else if (fieldData.settings?.appearance) {
+    settings.appearance = fieldData.settings.appearance;
   }
 
-  // Handle advanced settings - prioritize _settings columns
-  if (fieldData.advanced_settings) {
-    settings.advanced = fieldData.advanced_settings;
-  } else if (fieldData.advanced) {
+  // Handle advanced settings
+  if (fieldData.advanced) {
     settings.advanced = fieldData.advanced;
+  } else if (fieldData.settings?.advanced) {
+    settings.advanced = fieldData.settings.advanced;
   }
 
-  // Handle UI options - prioritize _settings columns
-  if (fieldData.ui_options_settings) {
-    settings.ui_options = fieldData.ui_options_settings;
-  } else if (fieldData.ui_options) {
+  // Handle UI options
+  if (fieldData.ui_options) {
     settings.ui_options = fieldData.ui_options;
+  } else if (fieldData.settings?.ui_options) {
+    settings.ui_options = fieldData.settings.ui_options;
   }
 
-  // Handle help text - prioritize general_settings
-  if (fieldData.general_settings?.helpText) {
-    settings.helpText = fieldData.general_settings.helpText;
-  } else if (fieldData.helpText) {
+  // Handle help text
+  if (fieldData.helpText) {
     settings.helpText = fieldData.helpText;
+  } else if (fieldData.settings?.helpText) {
+    settings.helpText = fieldData.settings.helpText;
   }
   
-  // Handle general settings - prioritize general_settings column
-  if (fieldData.general_settings) {
-    settings.general = fieldData.general_settings;
-  } else if (fieldData.general) {
+  // Handle general settings
+  if (fieldData.general) {
     settings.general = fieldData.general;
+  } else if (fieldData.settings?.general) {
+    settings.general = fieldData.settings.general;
   }
 
   return settings;
 }
 
 /**
- * Helper function to extract settings from the new column structure
+ * New helper function to extract settings from the new column structure
  * @param fieldData The field data object
  * @returns Normalized field settings object
  */
 export const getSettingsFromColumns = (fieldData: any): FieldSettings => {
-  return {
-    validation: fieldData.validation_settings || fieldData.validation || {},
-    appearance: fieldData.appearance_settings || fieldData.appearance || {},
-    advanced: fieldData.advanced_settings || fieldData.advanced || {},
-    ui_options: fieldData.ui_options_settings || fieldData.ui_options || {},
-    general: fieldData.general_settings || fieldData.general || {},
-    helpText: fieldData.general_settings?.helpText || fieldData.helpText || '',
-  };
+  // Handle the new columns structure if available
+  if (
+    fieldData.validation_settings ||
+    fieldData.appearance_settings ||
+    fieldData.advanced_settings ||
+    fieldData.ui_options_settings ||
+    fieldData.general_settings
+  ) {
+    return {
+      validation: fieldData.validation_settings || {},
+      appearance: fieldData.appearance_settings || {},
+      advanced: fieldData.advanced_settings || {},
+      ui_options: fieldData.ui_options_settings || {},
+      general: fieldData.general_settings || {},
+      helpText: fieldData.general_settings?.helpText || fieldData.helpText || '',
+    };
+  }
+
+  // Fall back to the legacy structure
+  return getNormalizedFieldSettings(fieldData);
 };
 
 /**
@@ -215,6 +228,8 @@ export const getGeneralSettings = (fieldData: any): GeneralSettings => {
     return fieldData.general_settings;
   } else if (fieldData?.general) {
     return fieldData.general;
+  } else if (fieldData?.settings?.general) {
+    return fieldData.settings.general;
   }
   
   // Construct general settings from top-level properties if not found in dedicated locations
@@ -235,6 +250,8 @@ export const getValidationSettings = (fieldData: any): ValidationSettings => {
     return fieldData.validation_settings;
   } else if (fieldData?.validation) {
     return fieldData.validation;
+  } else if (fieldData?.settings?.validation) {
+    return fieldData.settings.validation;
   }
   return {};
 };
@@ -249,6 +266,8 @@ export const getAppearanceSettings = (fieldData: any): AppearanceSettings => {
     return fieldData.appearance_settings;
   } else if (fieldData?.appearance) {
     return fieldData.appearance;
+  } else if (fieldData?.settings?.appearance) {
+    return fieldData.settings.appearance;
   }
   return {};
 };
@@ -263,6 +282,8 @@ export const getAdvancedSettings = (fieldData: any): AdvancedSettings => {
     return fieldData.advanced_settings;
   } else if (fieldData?.advanced) {
     return fieldData.advanced;
+  } else if (fieldData?.settings?.advanced) {
+    return fieldData.settings.advanced;
   }
   return {};
 };
@@ -277,12 +298,14 @@ export const getUIOptions = (fieldData: any): UIOptions => {
     return fieldData.ui_options_settings;
   } else if (fieldData?.ui_options) {
     return fieldData.ui_options;
+  } else if (fieldData?.settings?.ui_options) {
+    return fieldData.settings.ui_options;
   }
   return {};
 };
 
 /**
- * Updates a field with new settings, using the dedicated columns
+ * Updates a field with new settings
  * @param originalField The original field object
  * @param section The settings section to update
  * @param newSettings The new settings to merge
@@ -296,53 +319,36 @@ export function updateFieldSettings(
   // Deep clone to avoid mutations
   const updatedField = cloneDeep(originalField || {});
   
-  // Update the appropriate column based on the section
-  switch (section) {
-    case 'validation':
-      updatedField.validation_settings = merge({}, updatedField.validation_settings || {}, newSettings);
-      updatedField.validation = updatedField.validation_settings; // Keep in sync
-      break;
-    case 'appearance':
-      updatedField.appearance_settings = merge({}, updatedField.appearance_settings || {}, newSettings);
-      updatedField.appearance = updatedField.appearance_settings; // Keep in sync
-      break;
-    case 'advanced':
-      updatedField.advanced_settings = merge({}, updatedField.advanced_settings || {}, newSettings);
-      updatedField.advanced = updatedField.advanced_settings; // Keep in sync
-      break;
-    case 'ui_options':
-      updatedField.ui_options_settings = merge({}, updatedField.ui_options_settings || {}, newSettings);
-      updatedField.ui_options = updatedField.ui_options_settings; // Keep in sync
-      break;
-    case 'general':
-      updatedField.general_settings = merge({}, updatedField.general_settings || {}, newSettings);
-      updatedField.general = updatedField.general_settings; // Keep in sync
-      break;
-    case 'helpText':
-      if (!updatedField.general_settings) updatedField.general_settings = {};
-      updatedField.general_settings.helpText = newSettings;
-      break;
-    default:
-      // Fallback for any other fields
-      if (!updatedField[section]) {
-        updatedField[section] = {};
-      }
-      updatedField[section] = merge({}, updatedField[section], newSettings);
+  // Ensure settings object exists
+  if (!updatedField.settings) {
+    updatedField.settings = {};
+  }
+  
+  // Update the specified section with deep merge
+  if (!updatedField.settings[section]) {
+    updatedField.settings[section] = {};
+  }
+  
+  updatedField.settings[section] = merge({}, updatedField.settings[section], newSettings);
+  
+  // For consistency, also update top level if it exists there
+  if (updatedField[section]) {
+    updatedField[section] = merge({}, updatedField[section], newSettings);
   }
   
   return updatedField;
 }
 
 /**
- * Creates an update payload for the database using the new column structure
+ * Creates an update payload for the database that matches the expected structure
  * @param section The settings section being updated
- * @param settings The new settings for that section
+ * @param newSettings The new settings for that section
  * @returns A properly structured update payload
  */
 export const createColumnUpdatePayload = (
   section: keyof FieldSettings,
   settings: any
-): Partial<FieldSettingsColumns> => {
+): Partial<FieldSettingsColumns & { settings?: any }> => {
   // Map the section to the appropriate column
   switch (section) {
     case 'validation':
@@ -359,13 +365,30 @@ export const createColumnUpdatePayload = (
       // HelpText gets stored in general_settings
       return { general_settings: { helpText: settings } };
     default:
-      // For any other fields, create an empty object
-      return {};
+      // For backward compatibility
+      return createUpdatePayload(section, settings);
   }
 };
 
 /**
- * Standardizes the field structure for database operations using the new column structure
+ * Create update payload for the new column structure
+ * @param section The settings section being updated
+ * @param newSettings The new settings for that section
+ * @returns A properly structured update payload
+ */
+export const createUpdatePayload = (
+  section: keyof FieldSettings,
+  settings: any
+): { settings: any } => {
+  return {
+    settings: {
+      [section]: settings
+    }
+  };
+};
+
+/**
+ * Standardizes the field structure for database operations
  * @param fieldData The field data from the form
  * @returns A standardized field structure for database operation
  */
@@ -405,41 +428,51 @@ export function standardizeFieldForDatabase(fieldData: any): any {
   if (fieldData.rows) general_settings.rows = fieldData.rows;
   if (fieldData.minHeight) general_settings.minHeight = fieldData.minHeight;
   
-  // Add UI options - prefer ui_options_settings
-  if (fieldData.ui_options_settings || fieldData.ui_options) {
-    standardizedField.ui_options_settings = fieldData.ui_options_settings || fieldData.ui_options;
-    standardizedField.ui_options = fieldData.ui_options_settings || fieldData.ui_options;
+  // Add UI options
+  if (fieldData.ui_options) {
+    standardizedField.ui_options_settings = fieldData.ui_options;
   }
   
-  // Add validation settings - prefer validation_settings
-  if (fieldData.validation_settings || fieldData.validation) {
-    standardizedField.validation_settings = fieldData.validation_settings || fieldData.validation;
-    standardizedField.validation = fieldData.validation_settings || fieldData.validation;
+  // Add validation settings
+  if (fieldData.validation) {
+    standardizedField.validation_settings = fieldData.validation;
   }
   
-  // Add appearance settings - prefer appearance_settings
-  if (fieldData.appearance_settings || fieldData.appearance) {
-    standardizedField.appearance_settings = fieldData.appearance_settings || fieldData.appearance;
-    standardizedField.appearance = fieldData.appearance_settings || fieldData.appearance;
+  // Add appearance settings
+  if (fieldData.appearance) {
+    standardizedField.appearance_settings = fieldData.appearance;
   }
   
-  // Add advanced settings - prefer advanced_settings
-  if (fieldData.advanced_settings || fieldData.advanced) {
-    standardizedField.advanced_settings = fieldData.advanced_settings || fieldData.advanced;
-    standardizedField.advanced = fieldData.advanced_settings || fieldData.advanced;
+  // Add advanced settings
+  if (fieldData.advanced) {
+    standardizedField.advanced_settings = fieldData.advanced;
   }
   
   // Only add general settings if we have data
   if (Object.keys(general_settings).some(key => general_settings[key] !== undefined)) {
     standardizedField.general_settings = general_settings;
-    standardizedField.general = general_settings;
   }
   
+  // Collect all settings into the legacy settings object for backward compatibility
+  const settings: Record<string, any> = {};
+  
+  if (fieldData.validation) settings.validation = fieldData.validation;
+  if (fieldData.appearance) settings.appearance = fieldData.appearance;
+  if (fieldData.advanced) settings.advanced = fieldData.advanced;
+  if (fieldData.ui_options) settings.ui_options = fieldData.ui_options;
+  if (fieldData.helpText) settings.helpText = fieldData.helpText;
+  if (Object.keys(general_settings).length > 0) settings.general = general_settings;
+  
+  // Only add settings if we have some data
+  if (Object.keys(settings).length > 0) {
+    standardizedField.settings = settings;
+  }
+
   return standardizedField;
 }
 
 /**
- * Helper to modify nested field settings without mutation, using dedicated columns
+ * Helper to modify nested field settings without mutation
  */
 export function updateNestedSetting(
   field: any,
@@ -449,50 +482,23 @@ export function updateNestedSetting(
 ): any {
   const updatedField = cloneDeep(field);
   
-  // Determine which column to update based on the section
-  let columnName: string;
-  switch (section) {
-    case 'validation':
-      columnName = 'validation_settings';
-      break;
-    case 'appearance':
-      columnName = 'appearance_settings';
-      break;
-    case 'advanced':
-      columnName = 'advanced_settings';
-      break;
-    case 'ui_options':
-      columnName = 'ui_options_settings';
-      break;
-    case 'general':
-    case 'helpText':
-      columnName = 'general_settings';
-      break;
-    default:
-      columnName = section;
+  // Ensure settings and section exist
+  if (!updatedField.settings) {
+    updatedField.settings = {};
   }
   
-  // Ensure the column exists
-  if (!updatedField[columnName]) {
-    updatedField[columnName] = {};
+  if (!updatedField.settings[section]) {
+    updatedField.settings[section] = {};
   }
   
-  // Special case for helpText in general settings
-  if (section === 'helpText') {
-    set(updatedField.general_settings, 'helpText', value);
-  } else {
-    // Use lodash's set to update the nested path
-    set(updatedField[columnName], path, value);
-  }
-  
-  // Keep the legacy field in sync
-  updatedField[section] = updatedField[columnName];
+  // Use lodash's set to update the nested path
+  set(updatedField.settings[section], path, value);
   
   return updatedField;
 }
 
 /**
- * Safely get a nested setting value with a default fallback, prioritizing dedicated columns
+ * Safely get a nested setting value with a default fallback
  */
 export function getNestedSetting(
   field: any,
@@ -500,61 +506,34 @@ export function getNestedSetting(
   path: string,
   defaultValue: any = undefined
 ): any {
-  // Determine which column to check based on the section
-  let columnName: string;
-  switch (section) {
-    case 'validation':
-      columnName = 'validation_settings';
-      break;
-    case 'appearance':
-      columnName = 'appearance_settings';
-      break;
-    case 'advanced':
-      columnName = 'advanced_settings';
-      break;
-    case 'ui_options':
-      columnName = 'ui_options_settings';
-      break;
-    case 'general':
-      columnName = 'general_settings';
-      break;
-    case 'helpText':
-      return get(field.general_settings, 'helpText', defaultValue);
-    default:
-      columnName = section;
+  if (!field || !field.settings || !field.settings[section]) {
+    return defaultValue;
   }
   
-  // Check the dedicated column first
-  if (field && field[columnName]) {
-    return get(field[columnName], path, defaultValue);
-  }
-  
-  // Fall back to the legacy field if needed
-  if (field && field[section]) {
-    return get(field[section], path, defaultValue);
-  }
-  
-  return defaultValue;
+  return get(field.settings[section], path, defaultValue);
 }
 
 /**
  * Convert a field object to a preview-ready format
- * with consistent structure for rendering, prioritizing dedicated columns
+ * with consistent structure for rendering
  */
 export function prepareFieldForPreview(field: any): any {
+  const settings = getSettingsFromColumns(field);
+  const generalSettings = getGeneralSettings(field);
+  
   return {
     id: field.id,
     name: field.name,
     type: field.type,
     apiId: field.api_id || field.apiId,
     required: field.required || false,
-    helpText: field.general_settings?.helpText || field.helpText || field.description || '',
-    placeholder: field.ui_options_settings?.placeholder || field.ui_options?.placeholder || `Enter ${field.name}...`,
-    validation: field.validation_settings || field.validation || {},
-    appearance: field.appearance_settings || field.appearance || {},
-    advanced: field.advanced_settings || field.advanced || {},
-    ui_options: field.ui_options_settings || field.ui_options || {},
-    general: field.general_settings || field.general || {},
+    helpText: generalSettings.helpText || settings.helpText || field.description || '',
+    placeholder: settings.ui_options?.placeholder || `Enter ${field.name}...`,
+    validation: settings.validation || {},
+    appearance: settings.appearance || {},
+    advanced: settings.advanced || {},
+    ui_options: settings.ui_options || {},
+    general: generalSettings || {},
     options: field.options || []
   };
 }
