@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -14,6 +15,7 @@ import {
 } from "@/components/ui/form";
 import { Check, X, AlertCircle } from 'lucide-react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { toast } from '@/hooks/use-toast';
 
 export interface FieldValidationPanelProps {
   fieldType: string | null;
@@ -46,37 +48,37 @@ export function FieldValidationPanel({ fieldType, initialData = {}, onUpdate }: 
   const [ariaLabelledBy, setAriaLabelledBy] = useState(initialData?.ariaLabelledBy || '');
   const [ariaInvalid, setAriaInvalid] = useState(initialData?.ariaInvalid || false);
   const [autocomplete, setAutocomplete] = useState(initialData?.autocomplete || '');
+  
+  // Debug state to track changes
+  const [lastUpdate, setLastUpdate] = useState<any>(null);
 
   useEffect(() => {
+    console.log('[FieldValidationPanel] Initial data received:', initialData);
+    
     if (initialData) {
-      setRequired(initialData.required || false);
-      setMinLengthEnabled(initialData.minLengthEnabled || false);
-      setMaxLengthEnabled(initialData.maxLengthEnabled || false);
-      setPatternEnabled(initialData.patternEnabled || false);
-      setCustomValidationEnabled(initialData.customValidationEnabled || false);
-      setMinLength(initialData.minLength || 0);
-      setMaxLength(initialData.maxLength || 100);
-      setPattern(initialData.pattern || '');
-      setCustomMessage(initialData.customMessage || '');
-      setCustomValidation(initialData.customValidation || '');
-      setAriaRequired(initialData.ariaRequired || false);
-      setAriaDescribedBy(initialData.ariaDescribedBy || '');
-      setAriaLabel(initialData.ariaLabel || '');
-      setAriaLabelledBy(initialData.ariaLabelledBy || '');
-      setAriaInvalid(initialData.ariaInvalid || false);
-      setAutocomplete(initialData.autocomplete || '');
+      // Check both direct properties and nested validation properties
+      const validation = initialData.validation || initialData;
+      
+      setRequired(validation.required || false);
+      setMinLengthEnabled(validation.minLengthEnabled || false);
+      setMaxLengthEnabled(validation.maxLengthEnabled || false);
+      setPatternEnabled(validation.patternEnabled || false);
+      setCustomValidationEnabled(validation.customValidationEnabled || false);
+      setMinLength(validation.minLength || 0);
+      setMaxLength(validation.maxLength || 100);
+      setPattern(validation.pattern || '');
+      setCustomMessage(validation.customMessage || '');
+      setCustomValidation(validation.customValidation || '');
+      setAriaRequired(validation.ariaRequired || false);
+      setAriaDescribedBy(validation.ariaDescribedBy || '');
+      setAriaLabel(validation.ariaLabel || '');
+      setAriaLabelledBy(validation.ariaLabelledBy || '');
+      setAriaInvalid(validation.ariaInvalid || false);
+      setAutocomplete(validation.autocomplete || '');
     }
   }, [initialData]);
 
-  useEffect(() => {
-    handleUpdateValidation();
-  }, [
-    required, minLengthEnabled, maxLengthEnabled, patternEnabled,
-    customValidationEnabled, minLength, maxLength, pattern, customMessage, customValidation,
-    ariaRequired, ariaDescribedBy, ariaLabel, ariaLabelledBy, ariaInvalid, autocomplete
-  ]);
-
-  const handleUpdateValidation = () => {
+  const createValidationObject = () => {
     const validationData = {
       required,
       minLengthEnabled,
@@ -95,9 +97,29 @@ export function FieldValidationPanel({ fieldType, initialData = {}, onUpdate }: 
       ariaInvalid,
       autocomplete
     };
-
-    onUpdate(validationData);
+    
+    return validationData;
   };
+
+  // Debounced update function to reduce unnecessary updates
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const validationData = createValidationObject();
+      
+      // Only update if data has actually changed
+      if (JSON.stringify(lastUpdate) !== JSON.stringify(validationData)) {
+        console.log('[FieldValidationPanel] Updating validation data:', validationData);
+        onUpdate(validationData);
+        setLastUpdate(validationData);
+      }
+    }, 300); // 300ms debounce
+    
+    return () => clearTimeout(timer);
+  }, [
+    required, minLengthEnabled, maxLengthEnabled, patternEnabled,
+    customValidationEnabled, minLength, maxLength, pattern, customMessage, customValidation,
+    ariaRequired, ariaDescribedBy, ariaLabel, ariaLabelledBy, ariaInvalid, autocomplete
+  ]);
 
   const testValidation = () => {
     const errors: string[] = [];
@@ -146,6 +168,20 @@ export function FieldValidationPanel({ fieldType, initialData = {}, onUpdate }: 
 
     setValidationResult(isValid ? 'valid' : 'invalid');
     setValidationErrors(errors);
+  };
+
+  const handleSaveToDatabase = () => {
+    const validationData = createValidationObject();
+    
+    console.log('[FieldValidationPanel] Manually saving validation data to database:', validationData);
+    
+    // Call onUpdate with the validation data
+    onUpdate(validationData);
+    
+    toast({
+      title: "Validation settings saved",
+      description: "Your validation settings have been updated",
+    });
   };
 
   const renderValidationStatus = () => {
@@ -330,6 +366,16 @@ export function FieldValidationPanel({ fieldType, initialData = {}, onUpdate }: 
               </FormControl>
             </FormItem>
           )}
+          
+          <div className="flex justify-end pt-4">
+            <Button 
+              variant="secondary" 
+              onClick={handleSaveToDatabase}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              Save Validation Settings
+            </Button>
+          </div>
         </TabsContent>
 
         <TabsContent value="testing" className="space-y-4">
@@ -471,6 +517,16 @@ export function FieldValidationPanel({ fieldType, initialData = {}, onUpdate }: 
                 <p className="text-xs text-gray-500">
                   Helps browsers autofill information correctly (e.g., "name", "email")
                 </p>
+              </div>
+              
+              <div className="flex justify-end pt-4">
+                <Button 
+                  variant="secondary" 
+                  onClick={handleSaveToDatabase}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Save Accessibility Settings
+                </Button>
               </div>
             </CardContent>
           </Card>

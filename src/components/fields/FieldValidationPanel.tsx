@@ -69,14 +69,6 @@ export function FieldValidationPanel({ fieldType, initialData = {}, onUpdate }: 
     }
   }, [initialData]);
 
-  useEffect(() => {
-    handleUpdateValidation();
-  }, [
-    required, minLengthEnabled, maxLengthEnabled, patternEnabled,
-    customValidationEnabled, minLength, maxLength, pattern, customMessage, customValidation,
-    ariaRequired, ariaDescribedBy, ariaLabel, ariaLabelledBy, ariaInvalid, autocomplete
-  ]);
-
   const handleUpdateValidation = () => {
     const validationData = {
       required,
@@ -97,7 +89,16 @@ export function FieldValidationPanel({ fieldType, initialData = {}, onUpdate }: 
       autocomplete
     };
 
+    // Log for debugging
+    console.log('Updating validation settings with data:', validationData);
+
     onUpdate(validationData);
+  };
+
+  const saveValidationSettings = () => {
+    handleUpdateValidation();
+    // Log for debugging
+    console.log('Explicitly saving validation settings');
   };
 
   const testValidation = () => {
@@ -183,7 +184,10 @@ export function FieldValidationPanel({ fieldType, initialData = {}, onUpdate }: 
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-medium">Field Validation Rules</h2>
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-medium">Field Validation Rules</h2>
+        <Button onClick={saveValidationSettings}>Save Validation Settings</Button>
+      </div>
       <p className="text-gray-500">
         Configure validation rules for your field
       </p>
@@ -207,7 +211,11 @@ export function FieldValidationPanel({ fieldType, initialData = {}, onUpdate }: 
                 </div>
                 <Switch
                   checked={required}
-                  onCheckedChange={setRequired}
+                  onCheckedChange={(value) => {
+                    setRequired(value);
+                    // Update immediately when toggling required
+                    setTimeout(() => handleUpdateValidation(), 0);
+                  }}
                 />
               </div>
 

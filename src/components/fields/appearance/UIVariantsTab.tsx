@@ -1,9 +1,10 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { validateUIVariant } from "@/utils/inputAdapters";
 
 interface UIVariantsTabProps {
   settings: any;
@@ -65,9 +66,19 @@ export function UIVariantsTab({ settings, onUpdate }: UIVariantsTabProps) {
     }
   ];
 
-  // Ensure we have a valid UI variant or default to 'standard'
-  const currentVariant = settings.uiVariant || 'standard';
-  console.log(`Current UI variant in UIVariantsTab: ${currentVariant}`);
+  // Ensure we have a valid UI variant using our validation utility
+  const currentVariant = validateUIVariant(settings.uiVariant);
+  console.log(`[UIVariantsTab] Current UI variant: ${currentVariant}`);
+  
+  // Ensure the UI variant is updated in settings when component mounts or settings change
+  useEffect(() => {
+    // Only update if the current variant differs from what's in settings
+    // This prevents unnecessary updates and potential update loops
+    if (settings.uiVariant !== currentVariant) {
+      console.log(`[UIVariantsTab] Updating UI variant from ${settings.uiVariant} to ${currentVariant}`);
+      onUpdate({ uiVariant: currentVariant });
+    }
+  }, [currentVariant, settings.uiVariant, onUpdate]);
 
   return (
     <div className="space-y-6">
@@ -79,9 +90,15 @@ export function UIVariantsTab({ settings, onUpdate }: UIVariantsTabProps) {
       <RadioGroup
         value={currentVariant}
         onValueChange={(value) => {
-          console.log('UI Variant selected:', value);
-          // Force update the uiVariant setting
-          onUpdate({ uiVariant: value });
+          console.log('[UIVariantsTab] UI Variant selected:', value);
+          // Call onUpdate immediately with the validated value to ensure it's saved
+          const validatedVariant = validateUIVariant(value);
+          console.log('[UIVariantsTab] Validated UI Variant to save:', validatedVariant);
+          
+          // Force update the uiVariant setting with the validated value
+          onUpdate({ 
+            uiVariant: validatedVariant
+          });
         }}
         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2"
       >

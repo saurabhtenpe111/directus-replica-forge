@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -36,30 +35,26 @@ export function CollectionPreviewForm({
     if (fields && fields.length > 0) {
       console.log("Original fields for preview:", JSON.stringify(fields, null, 2));
 
-      // Ensure appearance settings are properly passed
+      // Make sure each field has proper appearance settings
       const fieldsWithAppearance = fields.map(field => {
-        // Extract appearance settings
-        const appearance = field.appearance || (field.settings?.appearance) || {};
-        console.log(`Field ${field.name} appearance settings:`, JSON.stringify(appearance, null, 2));
-
-        // Create a new field object with appearance settings
-        return {
-          ...field,
-          appearance: appearance
-        };
+        // Ensure appearance settings exist
+        if (!field.appearance) {
+          console.log(`Field ${field.name} has no appearance settings, initializing with defaults`);
+          field.appearance = { uiVariant: 'standard' };
+        }
+        
+        console.log(`Field ${field.name} appearance settings:`, JSON.stringify(field.appearance, null, 2));
+        return field;
       });
 
-      const adaptedFields = adaptFieldsForPreview(fieldsWithAppearance);
-      console.log("Adapted fields for preview:", JSON.stringify(adaptedFields, null, 2));
-
-      setFieldDefinitions(adaptedFields);
+      setFieldDefinitions(fieldsWithAppearance);
 
       const initialData = fields.reduce((acc: Record<string, any>, field: any) => {
         // For number fields, initialize with null instead of empty string
         if (field.type === 'number') {
-          acc[field.api_id] = field.default_value !== undefined ? field.default_value : null;
+          acc[field.apiId] = field.default_value !== undefined ? field.default_value : null;
         } else {
-          acc[field.api_id] = field.default_value || '';
+          acc[field.apiId] = field.default_value || '';
         }
         return acc;
       }, {});
@@ -67,7 +62,7 @@ export function CollectionPreviewForm({
 
       const firstTextField = fields.find((f: any) => f.type === 'text');
       if (firstTextField) {
-        setTitleField(firstTextField.api_id);
+        setTitleField(firstTextField.apiId);
       }
     }
   }, [fields]);
@@ -272,8 +267,45 @@ export function CollectionPreviewForm({
     <>
       <Card className="border-0 shadow-none">
         <CardContent className="px-0">
-          <form onSubmit={handleSubmit} className="space-y-2">
-            {renderValidationErrors()}
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            setIsSubmitting(true);
+
+            // Validate the form before submitting
+            const isValid = validateForm();
+
+            if (isValid) {
+              console.log('Form data submitted:', formData);
+
+              // If onPreviewSave is provided, call it with the form data
+              if (onPreviewSave) {
+                onPreviewSave(formData);
+              } else {
+                toast({
+                  title: "Data saved",
+                  description: "Your content has been successfully saved.",
+                });
+              }
+            } else {
+              console.log('Form validation failed:', errors);
+              toast({
+                title: "Validation Error",
+                description: "Please fix the errors in the form before submitting.",
+                variant: "destructive"
+              });
+            }
+
+            setIsSubmitting(false);
+          }} className="space-y-2">
+            {Object.keys(errors).length > 0 && (
+              <Alert className="bg-red-50 border-red-200 mb-4">
+                <AlertCircle className="h-4 w-4 text-red-500" />
+                <AlertTitle className="text-red-700">Validation Errors</AlertTitle>
+                <AlertDescription className="text-red-600">
+                  Please fix the following {Object.keys(errors).length} {Object.keys(errors).length === 1 ? 'error' : 'errors'} before submitting.
+                </AlertDescription>
+              </Alert>
+            )}
             <div className="space-y-6">
               {fieldDefinitions.map((field) => (
                 <FieldRenderer
@@ -281,7 +313,24 @@ export function CollectionPreviewForm({
                   field={field}
                   formData={formData}
                   titleField={titleField || ""}
-                  onInputChange={handleInputChange}
+                  onInputChange={(fieldId, value) => {
+                    setFormData(prevData => ({
+                      ...prevData,
+                      [fieldId]: value,
+                    }));
+
+                    // Clear errors for this field when the value changes
+                    if (errors[fieldId]) {
+                      setErrors(prevErrors => {
+                        const newErrors = { ...prevErrors };
+                        delete newErrors[fieldId];
+                        return newErrors;
+                      });
+                    }
+
+                    // Log changes for debugging
+                    console.log(`Field ${fieldId} changed to:`, value);
+                  }}
                   errors={errors}
                 />
               ))}

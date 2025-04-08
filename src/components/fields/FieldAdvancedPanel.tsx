@@ -15,9 +15,24 @@ interface FieldAdvancedPanelProps {
   fieldType: string | null;
   initialData?: any; 
   onSave: (data: any) => void;
+  // Add missing props that are being passed to the component
+  fieldId?: string;
+  collectionId?: string;
+  onSaveToDatabase?: (data: any) => void;
+  isSaving?: boolean;
+  isSavingToDb?: boolean;
 }
 
-export function FieldAdvancedPanel({ fieldType, initialData = {}, onSave }: FieldAdvancedPanelProps) {
+export function FieldAdvancedPanel({ 
+  fieldType, 
+  initialData = {}, 
+  onSave,
+  fieldId,
+  collectionId,
+  onSaveToDatabase,
+  isSaving = false,
+  isSavingToDb = false
+}: FieldAdvancedPanelProps) {
   const [activeTab, setActiveTab] = useState('general');
   const [showButtons, setShowButtons] = useState(initialData?.showButtons || false);
   const [buttonLayout, setButtonLayout] = useState(initialData?.buttonLayout || 'horizontal');
@@ -273,6 +288,42 @@ export function FieldAdvancedPanel({ fieldType, initialData = {}, onSave }: Fiel
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Add Save to Database button if onSaveToDatabase function is provided */}
+      {onSaveToDatabase && (
+        <div className="flex justify-end space-x-2">
+          <button
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+            onClick={() => {
+              // Parse the custom data
+              let parsedCustomData = {};
+              try {
+                parsedCustomData = JSON.parse(customData);
+              } catch (error) {
+                // Use empty object if parsing fails
+              }
+              
+              const advancedData = {
+                showButtons,
+                buttonLayout,
+                prefix,
+                suffix,
+                currency,
+                locale,
+                mask,
+                customData: parsedCustomData
+              };
+              
+              onSaveToDatabase(advancedData);
+            }}
+            disabled={isSavingToDb || !fieldId || !collectionId}
+          >
+            {isSavingToDb ? 'Saving to Database...' : 'Save to Database'}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
+
+export default FieldAdvancedPanel;

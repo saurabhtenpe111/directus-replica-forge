@@ -99,3 +99,49 @@
 .has-error .ui-variant-underlined input {
   border-bottom-color: #ef4444;
 }
+
+/* WYSIWYG Editor Validation Styles */
+.has-error .ProseMirror {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.2);
+}
+
+.has-error .ProseMirror:focus {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+}
+
+/* UI Variant specific editor styles */
+.ui-variant-material .ProseMirror {
+  border: none !important;
+  border-bottom: 2px solid #e2e8f0 !important;
+  border-radius: 0;
+  padding-left: 0;
+  padding-right: 0;
+  background-color: transparent;
+}
+
+.ui-variant-pill .ProseMirror {
+  border-radius: 9999px;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.ui-variant-borderless .ProseMirror {
+  border: none !important;
+  background-color: rgba(241, 245, 249, 0.7);
+}
+
+.ui-variant-underlined .ProseMirror {
+  border: none !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  border-radius: 0;
+  padding-left: 0;
+  padding-right: 0;
+  background-color: transparent;
+}
+
+.ui-variant-material .has-error .ProseMirror,
+.ui-variant-underlined .has-error .ProseMirror {
+  border-bottom-color: #ef4444 !important;
+}

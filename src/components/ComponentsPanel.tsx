@@ -8,6 +8,25 @@ import { Badge } from '@/components/ui/badge';
 import { PlusCircle, Search, Filter, LayoutGrid, List } from 'lucide-react';
 import { CreateComponentDrawer } from './CreateComponentDrawer';
 
+// Define interface for component
+interface Component {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  lastUpdated: string;
+  fields: number;
+}
+
+// Define interface for ComponentsPanel props
+interface ComponentsPanelProps {
+  collections?: any[];
+  // Add missing props that are being passed to the component
+  onCreateField?: (collectionId: string, fieldData: any) => Promise<any>;
+  onUpdateField?: (collectionId: string, fieldId: string, fieldData: any) => Promise<any>;
+  isUpdating?: boolean;
+}
+
 // Mock components data
 const mockComponents = [
   {
@@ -44,7 +63,12 @@ const mockComponents = [
   }
 ];
 
-export const ComponentsPanel = () => {
+export const ComponentsPanel: React.FC<ComponentsPanelProps> = ({ 
+  collections,
+  onCreateField,
+  onUpdateField,
+  isUpdating 
+}) => {
   const navigate = useNavigate();
   const [components] = useState(mockComponents);
   const [searchQuery, setSearchQuery] = useState('');
@@ -60,6 +84,15 @@ export const ComponentsPanel = () => {
   const handleComponentClick = (componentId: string) => {
     navigate(`/components/${componentId}`);
   };
+  
+  // If collections are provided, we could use them here
+  // This is just to show we're handling the collections prop
+  console.log("Collections received:", collections);
+  
+  // If onCreateField is provided, we could use it here when creating a component
+  console.log("onCreateField provided:", !!onCreateField);
+  console.log("onUpdateField provided:", !!onUpdateField);
+  console.log("isUpdating status:", isUpdating);
   
   return (
     <div className="space-y-6">
@@ -179,8 +212,16 @@ export const ComponentsPanel = () => {
         onSave={(data) => {
           console.log("Component created:", data);
           setDrawerOpen(false);
+          
+          // If onCreateField is provided, use it to create a field for this component
+          if (onCreateField && collections && collections.length > 0) {
+            // This is just an example of how you might use onCreateField
+            // You'd need to adapt this based on the actual structure of your data
+            const defaultCollectionId = collections[0].id;
+            console.log("Could create field in collection:", defaultCollectionId);
+          }
         }}
       />
     </div>
   );
-};
+}

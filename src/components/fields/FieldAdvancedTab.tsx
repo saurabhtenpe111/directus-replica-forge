@@ -1,72 +1,34 @@
 
 import React, { useEffect, useState } from "react";
 import { FieldAdvancedPanel } from "./FieldAdvancedPanel";
-import { toast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { 
+  FieldSettingsMiddleware 
+} from "./middleware/FieldSettingsMiddleware";
+import { 
+  AdvancedSettingsMiddleware 
+} from "./middleware/AdvancedSettingsMiddleware";
 
 interface FieldAdvancedTabProps {
   fieldType: string | null;
+  fieldId?: string;
+  collectionId?: string;
   fieldData?: any;
   onUpdate: (data: any) => void;
 }
 
-export function FieldAdvancedTab({ fieldType, fieldData, onUpdate }: FieldAdvancedTabProps) {
-  const [advancedSettings, setAdvancedSettings] = useState<any>(
-    fieldData?.advanced || (fieldData?.settings?.advanced || {})
-  );
-  const [isSaving, setIsSaving] = useState(false);
+export function FieldAdvancedTab({ 
+  fieldType, 
+  fieldId,
+  collectionId,
+  fieldData, 
+  onUpdate 
+}: FieldAdvancedTabProps) {
   const [isLoading, setIsLoading] = useState(false);
 
-  // Update local state when fieldData changes
   useEffect(() => {
-    if (fieldData?.advanced) {
-      setAdvancedSettings(fieldData.advanced);
-    } else if (fieldData?.settings?.advanced) {
-      setAdvancedSettings(fieldData.settings.advanced);
-    } else {
-      setAdvancedSettings({});
-    }
+    console.log("[FieldAdvancedTab] Field data received:", fieldData);
   }, [fieldData]);
-
-  // Handle saving advanced settings
-  const handleSaveAdvancedSettings = (advancedSettings: any) => {
-    setIsSaving(true);
-    
-    try {
-      setAdvancedSettings(advancedSettings);
-      
-      // Merge with existing field data if needed
-      const updatedData = {
-        ...(fieldData || {}),
-        advanced: advancedSettings
-      };
-      
-      // Ensure we don't lose appearance settings if they exist
-      if (fieldData?.appearance) {
-        updatedData.appearance = fieldData.appearance;
-      }
-      
-      // Log what we're saving to debug any issues
-      console.log("Saving advanced settings:", advancedSettings);
-      console.log("Updated field data:", updatedData);
-      
-      onUpdate(updatedData);
-      
-      toast({
-        title: "Advanced settings updated",
-        description: "Your field's advanced settings have been saved"
-      });
-    } catch (error) {
-      console.error("Error saving advanced settings:", error);
-      toast({
-        title: "Error saving settings",
-        description: "There was a problem saving your advanced settings",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   if (isLoading) {
     return (
@@ -79,13 +41,30 @@ export function FieldAdvancedTab({ fieldType, fieldData, onUpdate }: FieldAdvanc
   }
 
   return (
-    <div className="space-y-6">
-      <FieldAdvancedPanel
-        fieldType={fieldType}
-        initialData={advancedSettings}
-        onSave={handleSaveAdvancedSettings}
-      />
-    </div>
+    <FieldSettingsMiddleware
+      fieldType={fieldType}
+      fieldId={fieldId}
+      collectionId={collectionId}
+      fieldData={fieldData}
+      onUpdate={onUpdate}
+    >
+      <AdvancedSettingsMiddleware>
+        {({ settings, updateSettings, saveToDatabase, isSaving }) => (
+          <div className="space-y-6">
+            <FieldAdvancedPanel
+              fieldType={fieldType}
+              fieldId={fieldId}
+              collectionId={collectionId}
+              initialData={settings}
+              onSave={updateSettings}
+              onSaveToDatabase={saveToDatabase}
+              isSaving={isSaving}
+              isSavingToDb={isSaving}
+            />
+          </div>
+        )}
+      </AdvancedSettingsMiddleware>
+    </FieldSettingsMiddleware>
   );
 }
 

@@ -1,4 +1,3 @@
-
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
@@ -13,6 +12,8 @@ const ComponentDetails = lazy(() => import('./pages/ComponentDetails'));
 const Content = lazy(() => import('./pages/Content'));
 const Api = lazy(() => import('./pages/Api'));
 const Users = lazy(() => import('./pages/Users'));
+const FieldDebug = lazy(() => import('./pages/FieldDebug'));
+const FieldConfigurationDebug = lazy(() => import('./pages/FieldConfigurationDebug'));
 
 // Loading component
 const LoadingFallback = () => (
@@ -39,6 +40,9 @@ function App() {
           <Route path="/content" element={<Content />} />
           <Route path="/api" element={<Api />} />
           <Route path="/users" element={<Users />} />
+          {/* Debug routes */}
+          <Route path="/debug/fields/:collectionId" element={<FieldDebug />} />
+          <Route path="/debug/field-config/:collectionId" element={<FieldConfigurationDebug />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </Suspense>
