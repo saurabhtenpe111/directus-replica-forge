@@ -14,6 +14,7 @@ export interface FieldSettings {
   advanced?: AdvancedSettings;
   ui_options?: UIOptions;
   helpText?: string;
+  general?: Record<string, any>; // Add general settings to the interface
 }
 
 export interface ValidationSettings {

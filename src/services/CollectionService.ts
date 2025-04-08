@@ -2,6 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
 import { normalizeAppearanceSettings, validateUIVariant } from '@/utils/inputAdapters';
 import { toast } from '@/hooks/use-toast';
+import { AdvancedSettings } from '@/utils/fieldSettingsHelpers';
 
 export interface ValidationSettings {
   required?: boolean;
@@ -96,6 +97,14 @@ export interface CollectionField {
   collection_id?: string;
 }
 
+type SupabaseFieldRow = Database['public']['Tables']['fields']['Row'] & {
+  validation_settings?: ValidationSettings;
+  appearance_settings?: AppearanceSettings;
+  advanced_settings?: AdvancedSettings;
+  ui_options_settings?: Record<string, any>;
+  general_settings?: Record<string, any>;
+};
+
 const mapSupabaseCollection = (collection: Database['public']['Tables']['collections']['Row']): Collection => {
   return {
     id: collection.id,
@@ -114,7 +123,7 @@ const mapSupabaseCollection = (collection: Database['public']['Tables']['collect
   };
 };
 
-const mapSupabaseField = (field: Database['public']['Tables']['fields']['Row']): CollectionField => {
+const mapSupabaseField = (field: SupabaseFieldRow): CollectionField => {
   const settings = field.settings as Record<string, any> || {};
 
   // Debug logging for field mapping

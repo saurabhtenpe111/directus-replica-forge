@@ -1,3 +1,4 @@
+
 import { AppearanceSettings } from "@/services/CollectionService";
 
 /**
@@ -5,13 +6,13 @@ import { AppearanceSettings } from "@/services/CollectionService";
  * If not, it returns a default value of 'standard'.
  *
  * @param {string} uiVariant - The UI variant to validate.
- * @returns {string} - The validated UI variant or 'standard' if the provided value is invalid.
+ * @returns {"standard" | "material" | "pill" | "borderless" | "underlined"} - The validated UI variant or 'standard' if the provided value is invalid.
  */
-export const validateUIVariant = (uiVariant: string | undefined): string => {
-  const allowedVariants = ["standard", "material", "pill", "borderless", "underlined"];
+export const validateUIVariant = (uiVariant: string | undefined): "standard" | "material" | "pill" | "borderless" | "underlined" => {
+  const allowedVariants = ["standard", "material", "pill", "borderless", "underlined"] as const;
   
-  if (uiVariant && allowedVariants.includes(uiVariant)) {
-    return uiVariant;
+  if (uiVariant && allowedVariants.includes(uiVariant as any)) {
+    return uiVariant as "standard" | "material" | "pill" | "borderless" | "underlined";
   }
   
   return "standard"; // Default value
