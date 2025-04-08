@@ -1,84 +1,105 @@
 
-import React, { useState, useCallback } from 'react';
-import { useFieldSettings } from '@/contexts/FieldSettingsContext';
-import { toast } from '@/hooks/use-toast';
+import React, { useState, useContext, createContext, useEffect } from 'react';
 import { updateField } from '@/services/CollectionService';
-import { ValidationSettings } from '@/utils/fieldSettingsHelpers';
+import { FieldSettingsContext } from './FieldSettingsMiddleware';
 
-export function ValidationSettingsMiddleware({ 
-  children 
-}: { 
-  children: (props: {
-    settings: ValidationSettings;
-    updateSettings: (settings: ValidationSettings) => void;
-    saveToDatabase: (settings: ValidationSettings) => Promise<void>;
-    isSaving: boolean;
-  }) => React.ReactNode
-}) {
-  const { 
-    fieldId, 
-    collectionId,
-    validation, 
-    updateValidation,
-    saveToDatabase: contextSaveToDatabase
-  } = useFieldSettings();
+// Context type definition
+interface ValidationSettingsContextValue {
+  settings: any;
+  updateSettings: (newSettings: any) => void;
+  saveToDatabase: (settingsToSave: any) => Promise<any>;
+  isSaving: boolean;
+}
+
+// Create context with default values
+const ValidationSettingsContext = createContext<ValidationSettingsContextValue>({
+  settings: {},
+  updateSettings: () => {},
+  saveToDatabase: async () => ({}),
+  isSaving: false
+});
+
+// Hook for components to use
+export const useValidationSettings = () => useContext(ValidationSettingsContext);
+
+interface ValidationSettingsMiddlewareProps {
+  children: React.ReactNode | ((props: ValidationSettingsContextValue) => React.ReactNode);
+}
+
+export function ValidationSettingsMiddleware({ children }: ValidationSettingsMiddlewareProps) {
+  // Get field data from parent middleware
+  const { fieldId, collectionId, fieldData, updateFieldData } = useContext(FieldSettingsContext);
   
+  // Extract validation settings from field data
+  const [settings, setSettings] = useState<any>(
+    fieldData?.validation_settings || fieldData?.validation || {}
+  );
+  
+  // Loading state
   const [isSaving, setIsSaving] = useState(false);
   
-  // Function to update validation settings locally
-  const updateSettings = useCallback((newSettings: ValidationSettings) => {
-    console.log('Updating validation settings:', newSettings);
-    updateValidation(newSettings);
-  }, [updateValidation]);
-  
-  // Function to save validation settings to the database
-  const saveToDatabase = useCallback(async (settings: ValidationSettings): Promise<void> => {
-    if (!fieldId || !collectionId) {
-      toast({
-        title: "Missing field or collection ID",
-        description: "Cannot save to database without field and collection IDs",
-        variant: "destructive"
+  // Update settings when field data changes
+  useEffect(() => {
+    const newSettings = fieldData?.validation_settings || fieldData?.validation || {};
+    setSettings(newSettings);
+  }, [fieldData]);
+
+  // Update settings locally
+  const updateSettings = (newSettings: any) => {
+    console.log('[ValidationSettingsMiddleware] Updating settings:', newSettings);
+    setSettings(newSettings);
+    
+    // Update parent middleware if it exists
+    if (updateFieldData) {
+      updateFieldData({
+        validation_settings: newSettings,
+        validation: newSettings // For backward compatibility
       });
-      return Promise.reject(new Error("Missing field or collection ID"));
+    }
+  };
+
+  // Save settings to database
+  const saveToDatabase = async (settingsToSave: any = settings) => {
+    if (!fieldId || !collectionId) {
+      console.error('[ValidationSettingsMiddleware] Cannot save to database - missing fieldId or collectionId');
+      return null;
     }
     
     setIsSaving(true);
     
     try {
-      console.log('Saving validation settings to database:', settings);
+      console.log('[ValidationSettingsMiddleware] Saving to database:', settingsToSave);
       
-      // Use the new updateField function with options
-      await updateField(
-        collectionId,
-        fieldId, 
-        { validation_settings: settings },
-        { columnToUpdate: 'validation_settings', mergeStrategy: 'deep' }
-      );
+      const result = await updateField(collectionId, fieldId, {
+        validation_settings: settingsToSave,
+        validation: settingsToSave // For backward compatibility
+      }, {
+        columnToUpdate: 'validation_settings',
+        mergeStrategy: 'replace'
+      });
       
-      // Also update our context state
-      await updateValidation(settings);
-      
-      // Also use the context's saveToDatabase for additional effects if needed
-      await contextSaveToDatabase('validation', settings);
-      
-      return Promise.resolve();
-    } catch (error) {
-      console.error('Error saving validation settings to database:', error);
-      throw error;
-    } finally {
       setIsSaving(false);
+      return result;
+    } catch (error) {
+      console.error('[ValidationSettingsMiddleware] Error saving settings:', error);
+      setIsSaving(false);
+      throw error;
     }
-  }, [fieldId, collectionId, updateValidation, contextSaveToDatabase]);
-  
+  };
+
+  // Context value
+  const contextValue: ValidationSettingsContextValue = {
+    settings,
+    updateSettings,
+    saveToDatabase,
+    isSaving
+  };
+
+  // Render children with context
   return (
-    <>
-      {children({ 
-        settings: validation, 
-        updateSettings, 
-        saveToDatabase,
-        isSaving
-      })}
-    </>
+    <ValidationSettingsContext.Provider value={contextValue}>
+      {typeof children === 'function' ? children(contextValue) : children}
+    </ValidationSettingsContext.Provider>
   );
 }
 

@@ -1,60 +1,103 @@
 
-import React, { useEffect } from 'react';
-import { FieldSettingsProvider, useFieldSettings } from '@/contexts/FieldSettingsContext';
+import React, { createContext, useState, useEffect, useContext } from 'react';
 
+// Define the context type
+interface FieldSettingsContextType {
+  fieldType: string | null;
+  fieldId: string | undefined;
+  collectionId: string | undefined;
+  fieldData: any;
+  updateFieldData: (data: any) => void;
+}
+
+// Create the context with default values
+export const FieldSettingsContext = createContext<FieldSettingsContextType>({
+  fieldType: null,
+  fieldId: undefined,
+  collectionId: undefined,
+  fieldData: null,
+  updateFieldData: () => {}
+});
+
+// Define the props for the middleware component
 interface FieldSettingsMiddlewareProps {
-  children: React.ReactNode;
   fieldType: string | null;
   fieldId?: string;
   collectionId?: string;
   fieldData?: any;
-  onUpdate?: (data: any) => void;
+  onUpdate: (data: any) => void;
+  children: React.ReactNode;
 }
 
-/**
- * Middleware component that handles field settings state management 
- * and synchronization with the database.
- */
+// Hook to use the context
+export const useFieldSettings = () => useContext(FieldSettingsContext);
+
+// Debug hook for field settings
+export const useFieldSettingsDebug = () => {
+  const context = useContext(FieldSettingsContext);
+
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[FieldSettings] Context:', {
+        fieldId: context.fieldId,
+        collectionId: context.collectionId,
+        fieldType: context.fieldType,
+        fieldData: context.fieldData
+      });
+    }
+  }, [context.fieldData, context.fieldId, context.collectionId, context.fieldType]);
+
+  return null;
+};
+
+// The middleware component
 export function FieldSettingsMiddleware({
-  children,
   fieldType,
   fieldId,
   collectionId,
   fieldData,
-  onUpdate
+  onUpdate,
+  children
 }: FieldSettingsMiddlewareProps) {
+  // Local state to track field data
+  const [localFieldData, setLocalFieldData] = useState(fieldData || {});
+
+  // Update local field data when the prop changes
+  useEffect(() => {
+    if (fieldData) {
+      setLocalFieldData(fieldData);
+    }
+  }, [fieldData]);
+
+  // Function to update field data and notify the parent component
+  const updateFieldData = (newData: any) => {
+    // Merge with existing data
+    const updatedData = { ...localFieldData, ...newData };
+    
+    // Update local state
+    setLocalFieldData(updatedData);
+    
+    // Notify parent component
+    onUpdate(updatedData);
+    
+    console.log('[FieldSettingsMiddleware] Field data updated:', updatedData);
+  };
+
+  // Create the context value
+  const contextValue: FieldSettingsContextType = {
+    fieldType,
+    fieldId,
+    collectionId,
+    fieldData: localFieldData,
+    updateFieldData
+  };
+
+  // Provider component
   return (
-    <FieldSettingsProvider
-      initialFieldData={fieldData}
-      fieldType={fieldType}
-      fieldId={fieldId}
-      collectionId={collectionId}
-      onFieldUpdate={onUpdate}
-    >
+    <FieldSettingsContext.Provider value={contextValue}>
       {children}
-    </FieldSettingsProvider>
+    </FieldSettingsContext.Provider>
   );
 }
 
-/**
- * Hook to log field settings changes for debugging
- */
-export function useFieldSettingsDebug() {
-  const settings = useFieldSettings();
-  
-  useEffect(() => {
-    console.log('[FieldSettingsDebug] Current field data:', settings.fieldData);
-    console.log('[FieldSettingsDebug] Validation settings:', settings.validation);
-    console.log('[FieldSettingsDebug] Appearance settings:', settings.appearance);
-    console.log('[FieldSettingsDebug] Advanced settings:', settings.advanced);
-    console.log('[FieldSettingsDebug] UI options:', settings.uiOptions);
-  }, [
-    settings.fieldData, 
-    settings.validation, 
-    settings.appearance, 
-    settings.advanced, 
-    settings.uiOptions
-  ]);
-  
-  return null;
-}
+export default FieldSettingsMiddleware;
