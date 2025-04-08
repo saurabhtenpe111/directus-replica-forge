@@ -15,7 +15,6 @@ interface FieldAdvancedPanelProps {
   fieldType: string | null;
   initialData?: any; 
   onSave: (data: any) => void;
-  // Add missing props that are being passed to the component
   fieldId?: string;
   collectionId?: string;
   onSaveToDatabase?: (data: any) => void;
@@ -232,6 +231,53 @@ export function FieldAdvancedPanel({
     }
   };
   
+  const renderGeneralTabContent = () => {
+    return (
+      <Card>
+        <CardContent className="pt-6 space-y-6">
+          {renderFieldSpecificOptions()}
+          
+          {!renderFieldSpecificOptions() && (
+            <p className="text-center text-gray-500 py-4">
+              No advanced settings available for this field type
+            </p>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
+
+  const renderCustomDataTabContent = () => {
+    return (
+      <Card>
+        <CardContent className="pt-6 space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="customData">Custom Data (JSON)</Label>
+            <Textarea 
+              id="customData"
+              value={customData}
+              onChange={(e) => handleCustomDataChange(e.target.value)}
+              className="font-mono text-sm h-60"
+            />
+            
+            {jsonError && (
+              <Alert variant="destructive" className="mt-2">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  {jsonError}
+                </AlertDescription>
+              </Alert>
+            )}
+            
+            <p className="text-xs text-gray-500">
+              Add custom properties as JSON that will be saved with the field
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+  
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-medium">Advanced Settings</h2>
@@ -246,46 +292,11 @@ export function FieldAdvancedPanel({
         </TabsList>
         
         <TabsContent value="general">
-          <Card>
-            <CardContent className="pt-6 space-y-6">
-              {renderFieldSpecificOptions()}
-              
-              {!renderFieldSpecificOptions() && (
-                <p className="text-center text-gray-500 py-4">
-                  No advanced settings available for this field type
-                </p>
-              )}
-            </CardContent>
-          </Card>
+          {renderGeneralTabContent()}
         </TabsContent>
         
         <TabsContent value="customData">
-          <Card>
-            <CardContent className="pt-6 space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="customData">Custom Data (JSON)</Label>
-                <Textarea 
-                  id="customData"
-                  value={customData}
-                  onChange={(e) => handleCustomDataChange(e.target.value)}
-                  className="font-mono text-sm h-60"
-                />
-                
-                {jsonError && (
-                  <Alert variant="destructive" className="mt-2">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      {jsonError}
-                    </AlertDescription>
-                  </Alert>
-                )}
-                
-                <p className="text-xs text-gray-500">
-                  Add custom properties as JSON that will be saved with the field
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          {renderCustomDataTabContent()}
         </TabsContent>
       </Tabs>
 
