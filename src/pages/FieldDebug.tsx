@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -9,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import { DebugFieldConfigPanel } from '@/components/fields/DebugFieldConfigPanel';
 
-const FieldDebug: React.FC = () => {
+export default function FieldDebug() {
   const { collectionId } = useParams<{ collectionId: string }>();
   const queryClient = useQueryClient();
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
@@ -17,10 +18,12 @@ const FieldDebug: React.FC = () => {
   const [selectedFieldType, setSelectedFieldType] = useState<string | null>(null);
   const [operationLogs, setOperationLogs] = useState<string[]>([]);
   
+  // Add a log entry
   const addLog = (message: string) => {
     setOperationLogs(prev => [...prev, `${new Date().toISOString()}: ${message}`]);
   };
 
+  // Fetch fields for the collection
   const { data: fields = [], isLoading, error } = useQuery({
     queryKey: ['fields', collectionId],
     queryFn: async () => {
@@ -61,10 +64,6 @@ const FieldDebug: React.FC = () => {
   const getSelectedField = () => {
     if (!selectedFieldId) return null;
     return fields.find(field => field.id === selectedFieldId);
-  };
-
-  const someFunction = (field: any) => {
-    return field.api_id || field.apiId;
   };
 
   if (!collectionId) {
@@ -122,7 +121,7 @@ const FieldDebug: React.FC = () => {
                         <div className="flex items-start justify-between">
                           <div>
                             <p className="font-medium">{field.name}</p>
-                            <p className="text-sm text-gray-500">API ID: {someFunction(field)}</p>
+                            <p className="text-sm text-gray-500">API ID: {field.apiId}</p>
                           </div>
                           <Badge variant="outline">{field.type}</Badge>
                         </div>
@@ -220,6 +219,4 @@ const FieldDebug: React.FC = () => {
       </div>
     </MainLayout>
   );
-};
-
-export default FieldDebug;
+}

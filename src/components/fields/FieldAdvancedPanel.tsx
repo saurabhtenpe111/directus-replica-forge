@@ -15,6 +15,7 @@ interface FieldAdvancedPanelProps {
   fieldType: string | null;
   initialData?: any; 
   onSave: (data: any) => void;
+  // Add missing props that are being passed to the component
   fieldId?: string;
   collectionId?: string;
   onSaveToDatabase?: (data: any) => void;
@@ -288,6 +289,7 @@ export function FieldAdvancedPanel({
         </TabsContent>
       </Tabs>
 
+      {/* Add Save to Database button if onSaveToDatabase function is provided */}
       {onSaveToDatabase && (
         <div className="flex justify-end space-x-2">
           <button

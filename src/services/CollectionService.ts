@@ -3,20 +3,34 @@ import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
 import { normalizeAppearanceSettings, validateUIVariant } from '@/utils/inputAdapters';
 import { toast } from '@/hooks/use-toast';
-import { 
-  AdvancedSettings,
-  ValidationSettings as HelperValidationSettings,
-  AppearanceSettings as HelperAppearanceSettings
-} from '@/utils/fieldSettingsHelpers';
-import { Json } from '@/integrations/supabase/types';
+import { AdvancedSettings } from '@/utils/fieldSettingsHelpers';
 
-export interface ValidationSettings extends HelperValidationSettings {
+export interface ValidationSettings {
   required?: boolean;
   // Add other validation properties
 }
 
-export interface AppearanceSettings extends HelperAppearanceSettings {
-  // Include any additional properties not in the helper interface
+export interface AppearanceSettings {
+  uiVariant?: "standard" | "material" | "pill" | "borderless" | "underlined";
+  textAlign?: string;
+  labelPosition?: string;
+  labelWidth?: number;
+  floatLabel?: boolean;
+  filled?: boolean;
+  showBorder?: boolean;
+  showBackground?: boolean;
+  roundedCorners?: string;
+  fieldSize?: string;
+  labelSize?: string;
+  customClass?: string;
+  customCss?: string;
+  colors?: Record<string, string>;
+  isDarkMode?: boolean;
+  responsive?: {
+    mobile?: Record<string, any>;
+    tablet?: Record<string, any>;
+    desktop?: Record<string, any>;
+  };
   [key: string]: any;
 }
 
@@ -50,43 +64,21 @@ export interface CollectionField {
   name: string;
   type: string;
   api_id?: string;
-  apiId?: string; // For compatibility with code that uses apiId
   description?: string;
-  required?: boolean; 
-  validation?: ValidationSettings;
-  appearance?: AppearanceSettings;
-  advanced?: AdvancedSettings;
+  required?: boolean;
+  validation?: any;
+  appearance?: any;
+  advanced?: any;
   ui_options?: any;
   general?: any;
   settings?: any;
-  validation_settings?: ValidationSettings;
-  appearance_settings?: AppearanceSettings;
-  advanced_settings?: AdvancedSettings;
+  validation_settings?: any;
+  appearance_settings?: any;
+  advanced_settings?: any;
   ui_options_settings?: any;
   general_settings?: any;
   sort_order?: number;
   collection_id?: string;
-}
-
-// Define our own field row type based on fields in our Database type
-export interface ExtendedFieldRow {
-  id: string;
-  name: string;
-  type: string;
-  api_id: string;
-  description: string | null;
-  required: boolean;
-  collection_id: string;
-  sort_order: number;
-  created_at: string;
-  updated_at: string;
-  settings: Json;
-  // Extended properties
-  validation_settings?: ValidationSettings;
-  appearance_settings?: AppearanceSettings;
-  advanced_settings?: AdvancedSettings;
-  ui_options_settings?: Record<string, any>;
-  general_settings?: Record<string, any>;
 }
 
 // Define a new interface for specifying which columns to update
@@ -95,7 +87,15 @@ export interface FieldUpdateOptions {
   mergeStrategy?: 'deep' | 'shallow' | 'replace';
 }
 
-const mapSupabaseCollection = (collection: any): Collection => {
+type SupabaseFieldRow = Database['public']['Tables']['fields']['Row'] & {
+  validation_settings?: ValidationSettings;
+  appearance_settings?: AppearanceSettings;
+  advanced_settings?: AdvancedSettings;
+  ui_options_settings?: Record<string, any>;
+  general_settings?: Record<string, any>;
+};
+
+const mapSupabaseCollection = (collection: Database['public']['Tables']['collections']['Row']): Collection => {
   return {
     id: collection.id,
     title: collection.title,
@@ -113,23 +113,27 @@ const mapSupabaseCollection = (collection: any): Collection => {
   };
 };
 
-const mapSupabaseField = (field: ExtendedFieldRow): CollectionField => {
+const mapSupabaseField = (field: SupabaseFieldRow): CollectionField => {
+  // Debug logging for field mapping
   console.log(`Mapping field ${field.name} from database:`, {
     fieldId: field.id,
     fieldName: field.name,
     fieldType: field.type
   });
 
+  // Extract settings from the specific columns
   const validationSettings = field.validation_settings || {};
   const appearanceSettings = field.appearance_settings || {};
   const advancedSettings = field.advanced_settings || {};
   const uiOptionsSettings = field.ui_options_settings || {};
   const generalSettings = field.general_settings || {};
 
+  // Log appearance settings specifically
   if (appearanceSettings) {
     console.log(`Appearance settings for field ${field.name}:`, JSON.stringify(appearanceSettings, null, 2));
   }
   
+  // Ensure appearance settings are properly normalized
   const normalizedAppearance = normalizeAppearanceSettings(appearanceSettings);
 
   return {
@@ -137,7 +141,6 @@ const mapSupabaseField = (field: ExtendedFieldRow): CollectionField => {
     name: field.name,
     type: field.type,
     api_id: field.api_id,
-    apiId: field.api_id, // Add apiId for compatibility
     description: field.description || undefined,
     required: field.required || false,
     validation_settings: validationSettings,
@@ -147,14 +150,10 @@ const mapSupabaseField = (field: ExtendedFieldRow): CollectionField => {
     general_settings: generalSettings,
     sort_order: field.sort_order || 0,
     collection_id: field.collection_id || undefined,
-    validation: validationSettings,
-    appearance: normalizedAppearance,
-    advanced: advancedSettings,
-    ui_options: uiOptionsSettings,
-    general: generalSettings,
   };
 };
 
+// Helper function for deep merging objects
 const deepMerge = (target: any, source: any): any => {
   if (!isObject(target) || !isObject(source)) {
     return source;
@@ -170,6 +169,7 @@ const deepMerge = (target: any, source: any): any => {
         output[key] = deepMerge(target[key], source[key]);
       }
     } else if (Array.isArray(source[key])) {
+      // For arrays, replace the entire array rather than trying to merge
       output[key] = [...source[key]];
     } else {
       output[key] = source[key];
@@ -179,6 +179,7 @@ const deepMerge = (target: any, source: any): any => {
   return output;
 };
 
+// Helper function to log object differences for debugging
 const logObjectDiff = (before: any, after: any, path = '') => {
   if (!isObject(before) || !isObject(after)) {
     if (before !== after) {
@@ -187,6 +188,7 @@ const logObjectDiff = (before: any, after: any, path = '') => {
     return;
   }
   
+  // Check keys in before that might have changed or been removed
   Object.keys(before).forEach(key => {
     const currentPath = path ? `${path}.${key}` : key;
     
@@ -205,6 +207,7 @@ const logObjectDiff = (before: any, after: any, path = '') => {
     }
   });
   
+  // Check for new keys in after
   Object.keys(after).forEach(key => {
     if (!(key in before)) {
       const currentPath = path ? `${path}.${key}` : key;
@@ -240,8 +243,8 @@ export const CollectionService = {
         throw error;
       }
 
-      // Cast the fields as ExtendedFieldRow before mapping
-      return (fields as unknown as ExtendedFieldRow[]).map(mapSupabaseField);
+      debugLog(`Successfully fetched ${fields.length} fields`);
+      return fields.map(mapSupabaseField);
     } catch (error) {
       console.error('Failed to fetch fields:', error);
       return [];
@@ -252,6 +255,7 @@ export const CollectionService = {
     try {
       debugLog(`Creating new field in collection ${collectionId}:`, fieldData);
       
+      // First get the highest sort_order to add the new field at the bottom
       const { data: existingFields, error: countError } = await supabase
         .from('fields')
         .select('sort_order')
@@ -263,12 +267,14 @@ export const CollectionService = {
         console.error('Error getting existing fields:', countError);
       }
 
+      // Get the highest sort_order or use 0 if no fields exist
       const highestSortOrder = existingFields && existingFields.length > 0
         ? (existingFields[0].sort_order || 0) + 1
         : 0;
 
       debugLog(`Highest sort order is: ${highestSortOrder}`);
 
+      // Set up field data using only the new columns structure
       const field: any = {
         name: fieldData.name || 'New Field',
         api_id: fieldData.api_id || fieldData.name?.toLowerCase().replace(/\s+/g, '_') || 'new_field',
@@ -276,7 +282,9 @@ export const CollectionService = {
         collection_id: collectionId,
         description: fieldData.description || null,
         required: fieldData.required || false,
-        sort_order: highestSortOrder,
+        sort_order: highestSortOrder, // Place the new field at the bottom
+      
+        // Initialize empty objects for the columns
         validation_settings: {},
         appearance_settings: {},
         advanced_settings: {},
@@ -284,22 +292,27 @@ export const CollectionService = {
         general_settings: {},
       };
       
+      // Process validation settings
       if (fieldData.validation_settings || (fieldData as any).validation) {
         field.validation_settings = fieldData.validation_settings || (fieldData as any).validation || {};
       }
       
+      // Process appearance settings
       if (fieldData.appearance_settings || (fieldData as any).appearance) {
         field.appearance_settings = normalizeAppearanceSettings(fieldData.appearance_settings || (fieldData as any).appearance || {});
       }
       
+      // Process advanced settings
       if (fieldData.advanced_settings || (fieldData as any).advanced) {
         field.advanced_settings = fieldData.advanced_settings || (fieldData as any).advanced || {};
       }
       
+      // Process UI options
       if (fieldData.ui_options_settings || (fieldData as any).ui_options) {
         field.ui_options_settings = fieldData.ui_options_settings || (fieldData as any).ui_options || {};
       }
       
+      // Process general settings
       if (fieldData.general_settings) {
         field.general_settings = fieldData.general_settings;
       }
@@ -351,7 +364,8 @@ export const CollectionService = {
       debugLog(`Updating field ${fieldId} in collection ${collectionId}:`, fieldData);
       debugLog(`Update options: ${JSON.stringify(options)}`);
       
-      const { data: currentFieldData, error: getCurrentError } = await supabase
+      // Get current field data to provide proper defaults and for deep merging
+      const { data: currentField, error: getCurrentError } = await supabase
         .from('fields')
         .select('*')
         .eq('id', fieldId)
@@ -362,22 +376,14 @@ export const CollectionService = {
         throw getCurrentError;
       }
 
-      const currentField = currentFieldData as ExtendedFieldRow;
-
-      const extendedField = {
-        ...currentField,
-        validation_settings: currentField.validation_settings || {},
-        appearance_settings: currentField.appearance_settings || {},
-        advanced_settings: currentField.advanced_settings || {},
-        ui_options_settings: currentField.ui_options_settings || {},
-        general_settings: currentField.general_settings || {}
-      } as ExtendedFieldRow;
-
-      debugLog(`Current field data from database:`, JSON.stringify(extendedField, null, 2));
+      debugLog(`Current field data from database:`, JSON.stringify(currentField, null, 2));
       
+      // Initialize update data object
       const updateData: any = {};
       
+      // If we're doing a full update or specific basic field properties are provided, include them
       if (options.columnToUpdate === 'all') {
+        // Map basic field properties
         if (fieldData.name) updateData.name = fieldData.name;
         if (fieldData.api_id) updateData.api_id = fieldData.api_id;
         if (fieldData.type) updateData.type = fieldData.type;
@@ -386,15 +392,19 @@ export const CollectionService = {
         if (fieldData.sort_order !== undefined) updateData.sort_order = fieldData.sort_order;
       }
       
+      // Process specific column updates based on options
       if (options.columnToUpdate === 'all' || options.columnToUpdate === 'validation_settings') {
+        // Handle validation settings
         if (fieldData.validation_settings || (fieldData as any).validation) {
           const newValidation = fieldData.validation_settings || (fieldData as any).validation || {};
           
-          if (options.mergeStrategy === 'deep' && extendedField.validation_settings) {
-            updateData.validation_settings = deepMerge(extendedField.validation_settings, newValidation);
+          // Apply merge strategy
+          if (options.mergeStrategy === 'deep' && currentField.validation_settings) {
+            updateData.validation_settings = deepMerge(currentField.validation_settings, newValidation);
             
+            // Log differences for debugging
             console.log('Validation settings deep merge:');
-            logObjectDiff(extendedField.validation_settings, updateData.validation_settings);
+            logObjectDiff(currentField.validation_settings, updateData.validation_settings);
           } else {
             updateData.validation_settings = newValidation;
           }
@@ -404,16 +414,20 @@ export const CollectionService = {
       }
       
       if (options.columnToUpdate === 'all' || options.columnToUpdate === 'appearance_settings') {
+        // Handle appearance settings
         if (fieldData.appearance_settings || (fieldData as any).appearance) {
           const newAppearance = fieldData.appearance_settings || (fieldData as any).appearance || {};
           
+          // Normalize appearance settings
           const normalizedAppearance = normalizeAppearanceSettings(newAppearance);
           
-          if (options.mergeStrategy === 'deep' && extendedField.appearance_settings) {
-            updateData.appearance_settings = deepMerge(extendedField.appearance_settings, normalizedAppearance);
+          // Apply merge strategy
+          if (options.mergeStrategy === 'deep' && currentField.appearance_settings) {
+            updateData.appearance_settings = deepMerge(currentField.appearance_settings, normalizedAppearance);
             
+            // Log differences for debugging
             console.log('Appearance settings deep merge:');
-            logObjectDiff(extendedField.appearance_settings, updateData.appearance_settings);
+            logObjectDiff(currentField.appearance_settings, updateData.appearance_settings);
           } else {
             updateData.appearance_settings = normalizedAppearance;
           }
@@ -423,14 +437,17 @@ export const CollectionService = {
       }
       
       if (options.columnToUpdate === 'all' || options.columnToUpdate === 'advanced_settings') {
+        // Handle advanced settings
         if (fieldData.advanced_settings || (fieldData as any).advanced) {
           const newAdvanced = fieldData.advanced_settings || (fieldData as any).advanced || {};
           
-          if (options.mergeStrategy === 'deep' && extendedField.advanced_settings) {
-            updateData.advanced_settings = deepMerge(extendedField.advanced_settings, newAdvanced);
+          // Apply merge strategy
+          if (options.mergeStrategy === 'deep' && currentField.advanced_settings) {
+            updateData.advanced_settings = deepMerge(currentField.advanced_settings, newAdvanced);
             
+            // Log differences for debugging
             console.log('Advanced settings deep merge:');
-            logObjectDiff(extendedField.advanced_settings, updateData.advanced_settings);
+            logObjectDiff(currentField.advanced_settings, updateData.advanced_settings);
           } else {
             updateData.advanced_settings = newAdvanced;
           }
@@ -440,14 +457,17 @@ export const CollectionService = {
       }
       
       if (options.columnToUpdate === 'all' || options.columnToUpdate === 'ui_options_settings') {
+        // Handle UI options
         if (fieldData.ui_options_settings || (fieldData as any).ui_options) {
           const newUiOptions = fieldData.ui_options_settings || (fieldData as any).ui_options || {};
           
-          if (options.mergeStrategy === 'deep' && extendedField.ui_options_settings) {
-            updateData.ui_options_settings = deepMerge(extendedField.ui_options_settings, newUiOptions);
+          // Apply merge strategy
+          if (options.mergeStrategy === 'deep' && currentField.ui_options_settings) {
+            updateData.ui_options_settings = deepMerge(currentField.ui_options_settings, newUiOptions);
             
+            // Log differences for debugging
             console.log('UI options deep merge:');
-            logObjectDiff(extendedField.ui_options_settings, updateData.ui_options_settings);
+            logObjectDiff(currentField.ui_options_settings, updateData.ui_options_settings);
           } else {
             updateData.ui_options_settings = newUiOptions;
           }
@@ -457,12 +477,15 @@ export const CollectionService = {
       }
       
       if (options.columnToUpdate === 'all' || options.columnToUpdate === 'general_settings') {
+        // Handle general settings
         if (fieldData.general_settings) {
-          if (options.mergeStrategy === 'deep' && extendedField.general_settings) {
-            updateData.general_settings = deepMerge(extendedField.general_settings, fieldData.general_settings);
+          // Apply merge strategy
+          if (options.mergeStrategy === 'deep' && currentField.general_settings) {
+            updateData.general_settings = deepMerge(currentField.general_settings, fieldData.general_settings);
             
+            // Log differences for debugging
             console.log('General settings deep merge:');
-            logObjectDiff(extendedField.general_settings, updateData.general_settings);
+            logObjectDiff(currentField.general_settings, updateData.general_settings);
           } else {
             updateData.general_settings = fieldData.general_settings;
           }
@@ -471,11 +494,13 @@ export const CollectionService = {
         }
       }
       
+      // If no fields to update, return the current field
       if (Object.keys(updateData).length === 0) {
         console.log('No fields to update, returning current field data.');
         return mapSupabaseField(currentField);
       }
       
+      // Update the field in the database
       const { data, error } = await supabase
         .from('fields')
         .update(updateData)
@@ -493,8 +518,10 @@ export const CollectionService = {
         throw error;
       }
 
+      // Map the database response to our field model
       const mappedField = mapSupabaseField(data);
       
+      // Log the mapped field for debugging
       debugLog('[updateField] Updated field after mapping:', JSON.stringify(mappedField, null, 2));
       
       toast({
@@ -551,6 +578,7 @@ export const CollectionService = {
 
   updateFieldOrder: async (collectionId: string, fieldOrders: { id: string, sort_order: number }[]): Promise<boolean> => {
     try {
+      // Update each field's sort_order in sequence
       for (const field of fieldOrders) {
         const { error } = await supabase
           .from('fields')

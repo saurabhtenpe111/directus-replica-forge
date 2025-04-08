@@ -49,15 +49,17 @@ export function FieldAdvancedTab({
       onUpdate={onUpdate}
     >
       <AdvancedSettingsMiddleware>
-        {({ settings, updateSettings, saveToDatabase }) => (
-          <div>
+        {({ settings, updateSettings, saveToDatabase, isSaving }) => (
+          <div className="space-y-6">
             <FieldAdvancedPanel
               fieldType={fieldType}
-              initialData={settings}
-              onSave={updateSettings}
               fieldId={fieldId}
               collectionId={collectionId}
+              initialData={settings}
+              onSave={updateSettings}
               onSaveToDatabase={saveToDatabase}
+              isSaving={isSaving}
+              isSavingToDb={isSaving}
             />
           </div>
         )}

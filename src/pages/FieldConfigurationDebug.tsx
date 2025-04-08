@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -58,7 +59,7 @@ export default function FieldConfigurationDebug() {
       
       const testFieldData = {
         name: `Test Field ${Math.floor(Math.random() * 1000)}`,
-        api_id: `test_field_${Date.now()}`,
+        apiId: `test_field_${Date.now()}`,
         type: 'text',
         description: 'This is a test field created for debugging',
         required: false
@@ -116,7 +117,7 @@ export default function FieldConfigurationDebug() {
                         <li key={field.id} className="p-2 border-b last:border-0">
                           <div><strong>{field.name}</strong> ({field.type})</div>
                           <div className="text-sm text-gray-500">
-                            API ID: {field.api_id}, Required: {field.required ? 'Yes' : 'No'}
+                            API ID: {field.apiId}, Required: {field.required ? 'Yes' : 'No'}
                           </div>
                         </li>
                       ))}
