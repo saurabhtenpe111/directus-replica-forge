@@ -231,6 +231,7 @@ export function FieldAdvancedPanel({
     }
   };
   
+  // Render the general tab content in the correct context
   const renderGeneralTabContent = () => {
     return (
       <Card>
@@ -247,6 +248,7 @@ export function FieldAdvancedPanel({
     );
   };
 
+  // Render the custom data tab content in the correct context
   const renderCustomDataTabContent = () => {
     return (
       <Card>
