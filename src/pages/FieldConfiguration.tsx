@@ -62,6 +62,7 @@ interface Field extends CollectionField {
   required: boolean; // Make sure required is non-optional
 }
 
+// Define FieldType interface separately from FieldTypeGroup
 export interface FieldType {
   id: string;
   name: string;
@@ -69,6 +70,7 @@ export interface FieldType {
   group?: string;
 }
 
+// Define the structure for grouping field types
 export interface FieldTypeGroup {
   [key: string]: FieldType[];
 }
@@ -152,7 +154,8 @@ const fieldTypes: FieldTypeGroup = {
   ],
 };
 
-const flatFieldTypes = Object.entries(fieldTypes).flatMap(([category, types]) =>
+// Flatten field types for easier access
+const flatFieldTypes: FieldType[] = Object.entries(fieldTypes).flatMap(([category, types]) =>
   types.map(type => ({ ...type, group: category }))
 );
 
@@ -299,7 +302,7 @@ const FieldConfiguration: React.FC = () => {
   const renderCollectionPreview = () => {
     return (
       <CollectionPreviewForm 
-        fields={fields as Field[]} 
+        fields={fields as CollectionField[]} 
         name={collection?.title || "Collection"}
         collectionId={collectionId}
       />

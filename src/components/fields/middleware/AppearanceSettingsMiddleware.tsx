@@ -29,10 +29,10 @@ export function AppearanceSettingsMiddleware({
   // Function to update appearance settings locally
   const updateSettings = useCallback((newSettings: AppearanceSettings) => {
     console.log('Updating appearance settings:', newSettings);
-    // Ensure the textAlign property is within the allowed values
+    // Ensure the textAlign property is valid
     const typedSettings = {
       ...newSettings,
-      textAlign: (newSettings.textAlign as "left" | "center" | "right") || "left"
+      textAlign: newSettings.textAlign || "left"
     };
     updateAppearance(typedSettings);
   }, [updateAppearance]);
@@ -53,10 +53,10 @@ export function AppearanceSettingsMiddleware({
     try {
       console.log('Saving appearance settings to database:', settings);
       
-      // Ensure the textAlign property is within the allowed values
+      // Ensure the textAlign property is valid
       const typedSettings = {
         ...settings,
-        textAlign: (settings.textAlign as "left" | "center" | "right") || "left"
+        textAlign: settings.textAlign || "left"
       };
       
       // Normalize appearance settings before saving

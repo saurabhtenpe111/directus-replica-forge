@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
 import { normalizeAppearanceSettings, validateUIVariant } from '@/utils/inputAdapters';
@@ -67,8 +68,20 @@ export interface CollectionField {
   collection_id?: string;
 }
 
-// Extend the Supabase field type to include our custom columns
-interface ExtendedFieldRow extends Database['public']['Tables']['fields']['Row'] {
+// Define our own field row type based on fields in our Database type
+export interface ExtendedFieldRow {
+  id: string;
+  name: string;
+  type: string;
+  api_id: string;
+  description: string | null;
+  required: boolean;
+  collection_id: string;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+  settings: Json;
+  // Extended properties
   validation_settings?: ValidationSettings;
   appearance_settings?: AppearanceSettings;
   advanced_settings?: AdvancedSettings;
@@ -82,7 +95,7 @@ export interface FieldUpdateOptions {
   mergeStrategy?: 'deep' | 'shallow' | 'replace';
 }
 
-const mapSupabaseCollection = (collection: Database['public']['Tables']['collections']['Row']): Collection => {
+const mapSupabaseCollection = (collection: any): Collection => {
   return {
     id: collection.id,
     title: collection.title,
@@ -227,7 +240,8 @@ export const CollectionService = {
         throw error;
       }
 
-      return (fields as ExtendedFieldRow[]).map(mapSupabaseField);
+      // Cast the fields as ExtendedFieldRow before mapping
+      return (fields as unknown as ExtendedFieldRow[]).map(mapSupabaseField);
     } catch (error) {
       console.error('Failed to fetch fields:', error);
       return [];
