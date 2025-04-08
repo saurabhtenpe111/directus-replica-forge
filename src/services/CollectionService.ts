@@ -229,23 +229,23 @@ export const CollectionService = {
       };
       
       // Process validation settings
-      if (fieldData.validation_settings || fieldData.validation) {
-        field.validation_settings = fieldData.validation_settings || fieldData.validation || {};
+      if (fieldData.validation_settings || (fieldData as any).validation) {
+        field.validation_settings = fieldData.validation_settings || (fieldData as any).validation || {};
       }
       
       // Process appearance settings
-      if (fieldData.appearance_settings || fieldData.appearance) {
-        field.appearance_settings = normalizeAppearanceSettings(fieldData.appearance_settings || fieldData.appearance || {});
+      if (fieldData.appearance_settings || (fieldData as any).appearance) {
+        field.appearance_settings = normalizeAppearanceSettings(fieldData.appearance_settings || (fieldData as any).appearance || {});
       }
       
       // Process advanced settings
-      if (fieldData.advanced_settings || fieldData.advanced) {
-        field.advanced_settings = fieldData.advanced_settings || fieldData.advanced || {};
+      if (fieldData.advanced_settings || (fieldData as any).advanced) {
+        field.advanced_settings = fieldData.advanced_settings || (fieldData as any).advanced || {};
       }
       
       // Process UI options
-      if (fieldData.ui_options_settings || fieldData.ui_options) {
-        field.ui_options_settings = fieldData.ui_options_settings || fieldData.ui_options || {};
+      if (fieldData.ui_options_settings || (fieldData as any).ui_options) {
+        field.ui_options_settings = fieldData.ui_options_settings || (fieldData as any).ui_options || {};
       }
       
       // Process general settings
@@ -320,30 +320,30 @@ export const CollectionService = {
       debugLog(`Current field data from database:`, JSON.stringify(currentField, null, 2));
       
       // Handle validation settings
-      if (fieldData.validation_settings || fieldData.validation) {
-        const newValidation = fieldData.validation_settings || fieldData.validation || {};
+      if (fieldData.validation_settings || (fieldData as any).validation) {
+        const newValidation = fieldData.validation_settings || (fieldData as any).validation || {};
         updateData.validation_settings = newValidation;
         debugLog('[updateField] New validation settings:', JSON.stringify(newValidation, null, 2));
       }
       
       // Handle appearance settings
-      if (fieldData.appearance_settings || fieldData.appearance) {
-        const newAppearance = fieldData.appearance_settings || fieldData.appearance || {};
+      if (fieldData.appearance_settings || (fieldData as any).appearance) {
+        const newAppearance = fieldData.appearance_settings || (fieldData as any).appearance || {};
         // Normalize appearance settings
         updateData.appearance_settings = normalizeAppearanceSettings(newAppearance);
         debugLog('[updateField] New appearance settings:', JSON.stringify(updateData.appearance_settings, null, 2));
       }
       
       // Handle advanced settings
-      if (fieldData.advanced_settings || fieldData.advanced) {
-        const newAdvanced = fieldData.advanced_settings || fieldData.advanced || {};
+      if (fieldData.advanced_settings || (fieldData as any).advanced) {
+        const newAdvanced = fieldData.advanced_settings || (fieldData as any).advanced || {};
         updateData.advanced_settings = newAdvanced;
         debugLog('[updateField] New advanced settings:', JSON.stringify(newAdvanced, null, 2));
       }
       
       // Handle UI options
-      if (fieldData.ui_options_settings || fieldData.ui_options) {
-        const newUiOptions = fieldData.ui_options_settings || fieldData.ui_options || {};
+      if (fieldData.ui_options_settings || (fieldData as any).ui_options) {
+        const newUiOptions = fieldData.ui_options_settings || (fieldData as any).ui_options || {};
         updateData.ui_options_settings = newUiOptions;
         debugLog('[updateField] New UI options:', JSON.stringify(newUiOptions, null, 2));
       }

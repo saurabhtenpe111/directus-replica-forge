@@ -6,7 +6,6 @@ import {
   getAppearanceSettings, 
   getAdvancedSettings,
   getUIOptions,
-  createUpdatePayload,
   createColumnUpdatePayload,
   FieldSettings,
   ValidationSettings,
@@ -85,8 +84,6 @@ export const FieldSettingsProvider: React.FC<{
       const updatedFieldData = {
         ...fieldData,
         validation_settings: settings,
-        // For backward compatibility
-        validation: settings
       };
       
       setFieldData(updatedFieldData);
@@ -116,8 +113,6 @@ export const FieldSettingsProvider: React.FC<{
       const updatedFieldData = {
         ...fieldData,
         appearance_settings: settings,
-        // For backward compatibility
-        appearance: settings
       };
       
       setFieldData(updatedFieldData);
@@ -147,8 +142,6 @@ export const FieldSettingsProvider: React.FC<{
       const updatedFieldData = {
         ...fieldData,
         advanced_settings: settings,
-        // For backward compatibility
-        advanced: settings
       };
       
       setFieldData(updatedFieldData);
@@ -178,8 +171,6 @@ export const FieldSettingsProvider: React.FC<{
       const updatedFieldData = {
         ...fieldData,
         ui_options_settings: options,
-        // For backward compatibility
-        ui_options: options
       };
       
       setFieldData(updatedFieldData);
@@ -236,30 +227,28 @@ export const FieldSettingsProvider: React.FC<{
         let updatedSettings;
         switch (section) {
           case 'validation':
-            updatedSettings = updatedField.validation_settings || updatedField.validation || settings;
+            updatedSettings = updatedField.validation_settings || settings;
             break;
           case 'appearance':
-            updatedSettings = updatedField.appearance_settings || updatedField.appearance || settings;
+            updatedSettings = updatedField.appearance_settings || settings;
             break;
           case 'advanced':
-            updatedSettings = updatedField.advanced_settings || updatedField.advanced || settings;
+            updatedSettings = updatedField.advanced_settings || settings;
             break;
           case 'ui_options':
-            updatedSettings = updatedField.ui_options_settings || updatedField.ui_options || settings;
+            updatedSettings = updatedField.ui_options_settings || settings;
             break;
           case 'general':
             updatedSettings = updatedField.general_settings || settings;
             break;
           default:
-            updatedSettings = updatedField.settings?.[section] || settings;
+            updatedSettings = settings;
         }
         
         // Update the field data with the new settings
         const updatedFieldData = {
           ...fieldData,
           [`${section}_settings`]: updatedSettings,
-          // For backward compatibility
-          [section]: updatedSettings
         };
         
         setFieldData(updatedFieldData);
