@@ -1,106 +1,90 @@
 
-import React, { useState, useContext, createContext, useEffect } from 'react';
-import { updateField } from '@/services/CollectionService';
-import { FieldSettingsContext } from './FieldSettingsMiddleware';
+import React, { createContext, useState, useEffect, useContext } from 'react';
+import { useFieldSettings } from './FieldSettingsMiddleware';
 
-// Context type definition
-interface AdvancedSettingsContextValue {
+// Define the context type
+interface AdvancedSettingsContextType {
   settings: any;
-  updateSettings: (newSettings: any) => void;
-  saveToDatabase: (settingsToSave: any) => Promise<any>;
+  updateSettings: (data: any) => void;
+  saveToDatabase: (data?: any) => Promise<any>;
   isSaving: boolean;
 }
 
-// Create context with default values
-const AdvancedSettingsContext = createContext<AdvancedSettingsContextValue>({
+// Create the context with default values
+export const AdvancedSettingsContext = createContext<AdvancedSettingsContextType>({
   settings: {},
   updateSettings: () => {},
   saveToDatabase: async () => ({}),
   isSaving: false
 });
 
-// Hook for components to use
-export const useAdvancedSettings = () => useContext(AdvancedSettingsContext);
-
+// Define the props for the middleware component
 interface AdvancedSettingsMiddlewareProps {
-  children: React.ReactNode | ((props: AdvancedSettingsContextValue) => React.ReactNode);
+  children: React.ReactNode | ((props: AdvancedSettingsContextType) => React.ReactNode);
 }
 
-export function AdvancedSettingsMiddleware({ children }: AdvancedSettingsMiddlewareProps) {
-  // Get field data from parent middleware
-  const { fieldId, collectionId, fieldData, updateFieldData } = useContext(FieldSettingsContext);
-  
-  // Extract advanced settings from field data
-  const [settings, setSettings] = useState<any>(
-    fieldData?.advanced_settings || fieldData?.advanced || {}
-  );
-  
-  // Loading state
+// The middleware component
+export function AdvancedSettingsMiddleware({
+  children
+}: AdvancedSettingsMiddlewareProps) {
+  const { fieldId, collectionId, fieldData, updateFieldData } = useFieldSettings();
+  const [settings, setSettings] = useState({});
   const [isSaving, setIsSaving] = useState(false);
-  
-  // Update settings when field data changes
+
+  // Extract advanced settings from field data
   useEffect(() => {
-    const newSettings = fieldData?.advanced_settings || fieldData?.advanced || {};
-    setSettings(newSettings);
+    if (fieldData) {
+      const advancedSettings = fieldData.advanced_settings || fieldData.advanced || {};
+      setSettings(advancedSettings);
+      console.log('[AdvancedSettingsMiddleware] Initial settings:', advancedSettings);
+    }
   }, [fieldData]);
 
-  // Update settings locally
-  const updateSettings = (newSettings: any) => {
-    console.log('[AdvancedSettingsMiddleware] Updating settings:', newSettings);
-    setSettings(newSettings);
-    
-    // Update parent middleware if it exists
-    if (updateFieldData) {
-      updateFieldData({
-        advanced_settings: newSettings,
-        advanced: newSettings // For backward compatibility
-      });
-    }
+  // Function to update advanced settings
+  const updateSettings = (newData: any) => {
+    const updatedSettings = { ...settings, ...newData };
+    setSettings(updatedSettings);
+    console.log('[AdvancedSettingsMiddleware] Updated settings:', updatedSettings);
   };
 
-  // Save settings to database
-  const saveToDatabase = async (settingsToSave: any = settings) => {
-    if (!fieldId || !collectionId) {
-      console.error('[AdvancedSettingsMiddleware] Cannot save to database - missing fieldId or collectionId');
-      return null;
-    }
-    
+  // Function to save settings to database
+  const saveToDatabase = async (dataToSave?: any) => {
     setIsSaving(true);
-    
     try {
-      console.log('[AdvancedSettingsMiddleware] Saving to database:', settingsToSave);
+      const dataToUpdate = {
+        advanced_settings: dataToSave || settings
+      };
       
-      const result = await updateField(collectionId, fieldId, {
-        advanced_settings: settingsToSave,
-        advanced: settingsToSave // For backward compatibility
-      }, {
-        columnToUpdate: 'advanced_settings',
-        mergeStrategy: 'replace'
-      });
+      // Update field data in parent context
+      updateFieldData(dataToUpdate);
+      console.log('[AdvancedSettingsMiddleware] Saved to database:', dataToUpdate);
       
-      setIsSaving(false);
-      return result;
+      return dataToUpdate;
     } catch (error) {
-      console.error('[AdvancedSettingsMiddleware] Error saving settings:', error);
-      setIsSaving(false);
+      console.error('[AdvancedSettingsMiddleware] Error saving to database:', error);
       throw error;
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  // Context value
-  const contextValue: AdvancedSettingsContextValue = {
+  // Create the context value
+  const contextValue: AdvancedSettingsContextType = {
     settings,
     updateSettings,
     saveToDatabase,
     isSaving
   };
 
-  // Render children with context
+  // Provider component
   return (
     <AdvancedSettingsContext.Provider value={contextValue}>
       {typeof children === 'function' ? children(contextValue) : children}
     </AdvancedSettingsContext.Provider>
   );
 }
+
+// Hook to use the context
+export const useAdvancedSettings = () => useContext(AdvancedSettingsContext);
 
 export default AdvancedSettingsMiddleware;
