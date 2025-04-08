@@ -216,6 +216,257 @@ export function FieldValidationPanel({ fieldType, initialData = {}, onUpdate }: 
     );
   };
 
+  const renderRulesTab = () => (
+    <div className="space-y-4">
+      <Card className="border rounded-md">
+        <CardContent className="p-0">
+          <div className="flex flex-row items-center justify-between space-x-2 p-4 border-b">
+            <div>
+              <h3 className="text-base font-medium">Required Field</h3>
+              <p className="text-sm text-gray-500">
+                Make this field mandatory for content creation
+              </p>
+            </div>
+            <Switch
+              checked={required}
+              onCheckedChange={setRequired}
+            />
+          </div>
+
+          {fieldType && (
+            <>
+              <div className="flex flex-row items-center justify-between space-x-2 p-4 border-b">
+                <div>
+                  <h3 className="text-base font-medium">Minimum Length</h3>
+                  <p className="text-sm text-gray-500">
+                    Set a minimum number of characters
+                  </p>
+                </div>
+                <Switch
+                  checked={minLengthEnabled}
+                  onCheckedChange={setMinLengthEnabled}
+                />
+              </div>
+
+              {minLengthEnabled && (
+                <div className="px-4 py-3 border-b">
+                  <Input
+                    type="number"
+                    min="0"
+                    value={minLength}
+                    onChange={(e) => setMinLength(parseInt(e.target.value))}
+                    className="w-full"
+                  />
+                </div>
+              )}
+
+              <div className="flex flex-row items-center justify-between space-x-2 p-4 border-b">
+                <div>
+                  <h3 className="text-base font-medium">Maximum Length</h3>
+                  <p className="text-sm text-gray-500">
+                    Set a maximum number of characters
+                  </p>
+                </div>
+                <Switch
+                  checked={maxLengthEnabled}
+                  onCheckedChange={setMaxLengthEnabled}
+                />
+              </div>
+
+              {maxLengthEnabled && (
+                <div className="px-4 py-3 border-b">
+                  <Input
+                    type="number"
+                    min="1"
+                    value={maxLength}
+                    onChange={(e) => setMaxLength(parseInt(e.target.value))}
+                    className="w-full"
+                  />
+                </div>
+              )}
+
+              <div className="flex flex-row items-center justify-between space-x-2 p-4 border-b">
+                <div>
+                  <h3 className="text-base font-medium">Pattern Matching</h3>
+                  <p className="text-sm text-gray-500">
+                    Validate using a regular expression
+                  </p>
+                </div>
+                <Switch
+                  checked={patternEnabled}
+                  onCheckedChange={setPatternEnabled}
+                />
+              </div>
+
+              {patternEnabled && (
+                <div className="px-4 py-3 border-b space-y-3">
+                  <Input
+                    type="text"
+                    value={pattern}
+                    onChange={(e) => setPattern(e.target.value)}
+                    placeholder="Regular expression pattern (e.g., ^[a-zA-Z0-9]+$)"
+                    className="w-full"
+                  />
+                  <Input
+                    type="text"
+                    value={customMessage}
+                    onChange={(e) => setCustomMessage(e.target.value)}
+                    placeholder="Custom error message (optional)"
+                    className="w-full"
+                  />
+                </div>
+              )}
+
+              <div className="flex flex-row items-center justify-between space-x-2 p-4 border-b">
+                <div>
+                  <h3 className="text-base font-medium">Custom Validation</h3>
+                  <p className="text-sm text-gray-500">
+                    Advanced validation with JavaScript
+                  </p>
+                </div>
+                <Switch
+                  checked={customValidationEnabled}
+                  onCheckedChange={setCustomValidationEnabled}
+                />
+              </div>
+
+              {customValidationEnabled && (
+                <div className="px-4 py-3 border-b space-y-3">
+                  <Textarea
+                    value={customValidation}
+                    onChange={(e) => setCustomValidation(e.target.value)}
+                    placeholder="function(value) { return value.length > 5; }"
+                    className="w-full font-mono text-sm"
+                    rows={4}
+                  />
+                  <p className="text-xs text-gray-500">
+                    Enter a JavaScript function that takes the value and returns true (valid) or false (invalid)
+                  </p>
+                  <Input
+                    type="text"
+                    value={customMessage}
+                    onChange={(e) => setCustomMessage(e.target.value)}
+                    placeholder="Custom error message (optional)"
+                    className="w-full"
+                  />
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  const renderTestingTab = () => (
+    <div className="space-y-4">
+      <Card>
+        <CardContent className="pt-6 space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="test-value">Test Value</Label>
+            <div className="flex space-x-2">
+              <Input
+                id="test-value"
+                value={testValue}
+                onChange={(e) => setTestValue(e.target.value)}
+                className="flex-1"
+                placeholder="Enter a value to test against your validation rules"
+              />
+              <Button onClick={testValidation}>Test</Button>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-sm font-medium mb-2">Active Rules:</h3>
+            <ul className="list-disc pl-5 space-y-1">
+              {required && <li>Required field</li>}
+              {minLengthEnabled && <li>Minimum length: {minLength} characters</li>}
+              {maxLengthEnabled && <li>Maximum length: {maxLength} characters</li>}
+              {patternEnabled && pattern && <li>Pattern matching: {pattern}</li>}
+              {customValidationEnabled && <li>Custom validation function</li>}
+            </ul>
+          </div>
+
+          {renderValidationStatus()}
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  const renderAccessibilityTab = () => (
+    <div className="space-y-4">
+      <Card>
+        <CardContent className="pt-6 space-y-4">
+          <div className="flex flex-row items-center justify-between space-x-2">
+            <div>
+              <h3 className="text-base font-medium">ARIA Required</h3>
+              <p className="text-sm text-gray-500">
+                Add aria-required attribute
+              </p>
+            </div>
+            <Switch
+              checked={ariaRequired}
+              onCheckedChange={setAriaRequired}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="aria-described-by">ARIA Described By</Label>
+            <Input
+              id="aria-described-by"
+              value={ariaDescribedBy}
+              onChange={(e) => setAriaDescribedBy(e.target.value)}
+              placeholder="ID of the element that describes this field"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="aria-label">ARIA Label</Label>
+            <Input
+              id="aria-label"
+              value={ariaLabel}
+              onChange={(e) => setAriaLabel(e.target.value)}
+              placeholder="Accessible label for this field"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="aria-labelled-by">ARIA Labelled By</Label>
+            <Input
+              id="aria-labelled-by"
+              value={ariaLabelledBy}
+              onChange={(e) => setAriaLabelledBy(e.target.value)}
+              placeholder="ID of the element that labels this field"
+            />
+          </div>
+
+          <div className="flex flex-row items-center justify-between space-x-2">
+            <div>
+              <h3 className="text-base font-medium">ARIA Invalid</h3>
+              <p className="text-sm text-gray-500">
+                Mark field as invalid by default
+              </p>
+            </div>
+            <Switch
+              checked={ariaInvalid}
+              onCheckedChange={setAriaInvalid}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="autocomplete">Autocomplete</Label>
+            <Input
+              id="autocomplete"
+              value={autocomplete}
+              onChange={(e) => setAutocomplete(e.target.value)}
+              placeholder="e.g., name, email, tel, etc."
+            />
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-medium">Field Validation Rules</h2>
@@ -230,308 +481,27 @@ export function FieldValidationPanel({ fieldType, initialData = {}, onUpdate }: 
           <TabsTrigger value="accessibility" className="data-[state=active]:bg-white">Accessibility</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="rules" className="space-y-4">
-          <Card className="border rounded-md">
-            <CardContent className="p-0">
-              <div className="flex flex-row items-center justify-between space-x-2 p-4 border-b">
-                <div>
-                  <h3 className="text-base font-medium">Required Field</h3>
-                  <p className="text-sm text-gray-500">
-                    Make this field mandatory for content creation
-                  </p>
-                </div>
-                <Switch
-                  checked={required}
-                  onCheckedChange={setRequired}
-                />
-              </div>
-
-              {fieldType && (
-                <>
-                  <div className="flex flex-row items-center justify-between space-x-2 p-4 border-b">
-                    <div>
-                      <h3 className="text-base font-medium">Minimum Length</h3>
-                      <p className="text-sm text-gray-500">
-                        Set a minimum number of characters
-                      </p>
-                    </div>
-                    <Switch
-                      checked={minLengthEnabled}
-                      onCheckedChange={setMinLengthEnabled}
-                    />
-                  </div>
-
-                  {minLengthEnabled && (
-                    <div className="px-4 py-3 border-b">
-                      <Input
-                        type="number"
-                        min="0"
-                        value={minLength}
-                        onChange={(e) => setMinLength(parseInt(e.target.value))}
-                        className="w-full"
-                      />
-                    </div>
-                  )}
-
-                  <div className="flex flex-row items-center justify-between space-x-2 p-4 border-b">
-                    <div>
-                      <h3 className="text-base font-medium">Maximum Length</h3>
-                      <p className="text-sm text-gray-500">
-                        Set a maximum number of characters
-                      </p>
-                    </div>
-                    <Switch
-                      checked={maxLengthEnabled}
-                      onCheckedChange={setMaxLengthEnabled}
-                    />
-                  </div>
-
-                  {maxLengthEnabled && (
-                    <div className="px-4 py-3 border-b">
-                      <Input
-                        type="number"
-                        min="1"
-                        value={maxLength}
-                        onChange={(e) => setMaxLength(parseInt(e.target.value))}
-                        className="w-full"
-                      />
-                    </div>
-                  )}
-
-                  <div className="flex flex-row items-center justify-between space-x-2 p-4 border-b">
-                    <div>
-                      <h3 className="text-base font-medium">Pattern Matching</h3>
-                      <p className="text-sm text-gray-500">
-                        Validate using a regular expression
-                      </p>
-                    </div>
-                    <Switch
-                      checked={patternEnabled}
-                      onCheckedChange={setPatternEnabled}
-                    />
-                  </div>
-
-                  {patternEnabled && (
-                    <div className="px-4 py-3 border-b">
-                      <Input
-                        value={pattern}
-                        onChange={(e) => setPattern(e.target.value)}
-                        placeholder="e.g. ^[a-zA-Z0-9]+$"
-                        className="w-full"
-                      />
-                    </div>
-                  )}
-                </>
-              )}
-
-              <div className="flex flex-row items-center justify-between space-x-2 p-4 border-b">
-                <div>
-                  <h3 className="text-base font-medium">Custom Validation</h3>
-                  <p className="text-sm text-gray-500">
-                    Create a custom validation rule
-                  </p>
-                </div>
-                <Switch
-                  checked={customValidationEnabled}
-                  onCheckedChange={setCustomValidationEnabled}
-                />
-              </div>
-
-              {customValidationEnabled && (
-                <div className="px-4 py-3">
-                  <Textarea
-                    value={customValidation}
-                    onChange={(e) => setCustomValidation(e.target.value)}
-                    placeholder="(value) => { return value.length > 0; }"
-                    className="w-full h-24"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Use JavaScript to define a validation function that returns true if valid or false if invalid
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {(minLengthEnabled || maxLengthEnabled || patternEnabled || customValidationEnabled) && (
-            <FormItem>
-              <FormLabel>Custom Error Message</FormLabel>
-              <FormControl>
-                <Textarea
-                  value={customMessage}
-                  onChange={(e) => setCustomMessage(e.target.value)}
-                  placeholder="Enter a custom error message to display when validation fails"
-                  className="resize-y"
-                />
-              </FormControl>
-            </FormItem>
-          )}
-          
-          <div className="flex justify-end pt-4">
-            <Button 
-              variant="secondary" 
-              onClick={handleSaveToDatabase}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              Save Validation Settings
-            </Button>
-          </div>
+        <TabsContent value="rules">
+          {renderRulesTab()}
         </TabsContent>
 
-        <TabsContent value="testing" className="space-y-4">
-          <Card className="border rounded-md">
-            <CardContent className="p-4 space-y-4">
-              <h3 className="text-base font-medium">Test your validation rules</h3>
-              <p className="text-sm text-gray-500">Enter test data to see if it passes your validation rules</p>
-
-              <div className="space-y-4 mt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="test-input">Test Input</Label>
-                  <Input
-                    id="test-input"
-                    value={testValue}
-                    onChange={(e) => setTestValue(e.target.value)}
-                    placeholder="Enter test value..."
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <h4 className="text-sm font-medium">Current Validation Rules:</h4>
-                  <ul className="text-sm text-gray-500 list-disc pl-5 space-y-1">
-                    {required && (
-                      <li>Required field</li>
-                    )}
-                    {minLengthEnabled && (
-                      <li>Minimum length: {minLength} characters</li>
-                    )}
-                    {maxLengthEnabled && (
-                      <li>Maximum length: {maxLength} characters</li>
-                    )}
-                    {patternEnabled && pattern && (
-                      <li>Pattern: {pattern}</li>
-                    )}
-                    {customValidationEnabled && customValidation && (
-                      <li>Custom validation: (custom function)</li>
-                    )}
-                    {!required && !minLengthEnabled && !maxLengthEnabled && !patternEnabled && !customValidationEnabled && (
-                      <li>No validation rules configured</li>
-                    )}
-                  </ul>
-                </div>
-
-                <Button
-                  onClick={testValidation}
-                  className="w-full"
-                  variant="secondary"
-                >
-                  Test Validation
-                </Button>
-
-                {renderValidationStatus()}
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="testing">
+          {renderTestingTab()}
         </TabsContent>
 
-        <TabsContent value="accessibility" className="space-y-4">
-          <Card className="border rounded-md">
-            <CardContent className="p-4 space-y-6">
-              <div className="space-y-2">
-                <h3 className="text-base font-medium">Accessibility Attributes</h3>
-                <p className="text-sm text-gray-500">Configure ARIA attributes for this field</p>
-              </div>
-
-              <div className="flex flex-row items-center justify-between space-x-2 border-b pb-4">
-                <div>
-                  <h3 className="text-sm font-medium">Use aria-required attribute</h3>
-                  <p className="text-xs text-gray-500">
-                    Explicitly mark this field as required for assistive technologies
-                  </p>
-                </div>
-                <Switch
-                  checked={ariaRequired}
-                  onCheckedChange={setAriaRequired}
-                />
-              </div>
-
-              <div className="space-y-2 pt-2">
-                <Label htmlFor="aria-describedby">aria-describedby</Label>
-                <Input
-                  id="aria-describedby"
-                  value={ariaDescribedBy}
-                  onChange={(e) => setAriaDescribedBy(e.target.value)}
-                  placeholder="Element ID that describes this field"
-                />
-                <p className="text-xs text-gray-500">
-                  Links this field to its description for screen readers
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="aria-label">aria-label</Label>
-                <Input
-                  id="aria-label"
-                  value={ariaLabel}
-                  onChange={(e) => setAriaLabel(e.target.value)}
-                  placeholder="Label for this field"
-                />
-                <p className="text-xs text-gray-500">
-                  Provides an accessible name for the field when a visible label isn't available
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="aria-labelledby">aria-labelledby</Label>
-                <Input
-                  id="aria-labelledby"
-                  value={ariaLabelledBy}
-                  onChange={(e) => setAriaLabelledBy(e.target.value)}
-                  placeholder="Element ID that labels this field"
-                />
-                <p className="text-xs text-gray-500">
-                  References the ID of an element that labels this field
-                </p>
-              </div>
-
-              <div className="flex flex-row items-center justify-between space-x-2 border-t pt-4">
-                <div>
-                  <h3 className="text-sm font-medium">Use aria-invalid attribute</h3>
-                  <p className="text-xs text-gray-500">
-                    Indicates that the field has an invalid value
-                  </p>
-                </div>
-                <Switch
-                  checked={ariaInvalid}
-                  onCheckedChange={setAriaInvalid}
-                />
-              </div>
-
-              <div className="space-y-2 pt-2 border-t">
-                <Label htmlFor="autocomplete">HTML autocomplete attribute</Label>
-                <Input
-                  id="autocomplete"
-                  value={autocomplete}
-                  onChange={(e) => setAutocomplete(e.target.value)}
-                  placeholder="e.g., name, email, tel"
-                />
-                <p className="text-xs text-gray-500">
-                  Helps browsers autofill information correctly (e.g., "name", "email")
-                </p>
-              </div>
-              
-              <div className="flex justify-end pt-4">
-                <Button 
-                  variant="secondary" 
-                  onClick={handleSaveToDatabase}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  Save Accessibility Settings
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="accessibility">
+          {renderAccessibilityTab()}
         </TabsContent>
       </Tabs>
+
+      <div className="flex justify-end">
+        <Button 
+          onClick={handleSaveToDatabase}
+          className="bg-blue-600 hover:bg-blue-700 text-white"
+        >
+          Save Validation Settings
+        </Button>
+      </div>
     </div>
   );
 }
