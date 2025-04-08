@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { CollectionGrid } from '@/components/collections/CollectionGrid';
@@ -24,6 +25,16 @@ import { fetchCollections, createCollection, Collection } from '@/services/Colle
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Link } from 'react-router-dom';
+
+// Extended interface for form data to include settings
+interface ExtendedCollectionFormData {
+  name: string;
+  apiId: string;
+  description?: string;
+  status?: string;
+  settings?: any;
+  // Add any other fields that might be needed
+}
 
 export default function Collections() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -55,13 +66,14 @@ export default function Collections() {
     }
   });
   
-  const handleCollectionCreated = async (formData: any) => {
+  const handleCollectionCreated = async (formData: ExtendedCollectionFormData) => {
     createCollectionMutation.mutate({
       name: formData.name,
       apiId: formData.apiId,
       description: formData.description,
       status: formData.status || 'published',
-      settings: formData.settings
+      // Include settings if it exists in the formData
+      ...(formData.settings && { settings: formData.settings })
     });
     
     toast({

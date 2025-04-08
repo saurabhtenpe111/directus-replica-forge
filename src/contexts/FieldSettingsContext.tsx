@@ -227,19 +227,19 @@ export const FieldSettingsProvider: React.FC<{
         let updatedSettings;
         switch (section) {
           case 'validation':
-            updatedSettings = updatedField.validation_settings || settings;
+            updatedSettings = updatedField.validation_settings || updatedField.validation || settings;
             break;
           case 'appearance':
-            updatedSettings = updatedField.appearance_settings || settings;
+            updatedSettings = updatedField.appearance_settings || updatedField.appearance || settings;
             break;
           case 'advanced':
-            updatedSettings = updatedField.advanced_settings || settings;
+            updatedSettings = updatedField.advanced_settings || updatedField.advanced || settings;
             break;
           case 'ui_options':
-            updatedSettings = updatedField.ui_options_settings || settings;
+            updatedSettings = updatedField.ui_options_settings || updatedField.ui_options || settings;
             break;
           case 'general':
-            updatedSettings = updatedField.general_settings || settings;
+            updatedSettings = updatedField.general_settings || updatedField.general || settings;
             break;
           default:
             updatedSettings = settings;
