@@ -360,7 +360,11 @@ export const createColumnUpdatePayload = (
     case 'ui_options':
       return { ui_options_settings: settings };
     case 'general':
-      return { general_settings: settings };
+      return { 
+        general_settings: settings,
+        // Also update the description if it exists in general settings
+        description: settings.description || undefined 
+      };
     case 'helpText':
       // HelpText gets stored in general_settings
       return { general_settings: { helpText: settings } };

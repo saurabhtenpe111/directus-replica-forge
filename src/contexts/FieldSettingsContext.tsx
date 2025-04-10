@@ -258,6 +258,8 @@ export const FieldSettingsProvider: React.FC<{
       // Create the field data object using our helper for the new columns
       const fieldUpdateData = createColumnUpdatePayload(section, settings);
       
+      console.log('[FieldSettingsContext] Update payload:', fieldUpdateData);
+      
       // Call the service to update the field in the database
       const updatedField = await updateField(collectionId, fieldId, fieldUpdateData);
       
@@ -281,7 +283,7 @@ export const FieldSettingsProvider: React.FC<{
             updatedSettings = updatedField.ui_options_settings || updatedField.ui_options || settings;
             break;
           case 'general':
-            updatedSettings = updatedField.general_settings || settings;
+            updatedSettings = updatedField.general_settings || updatedField.general || settings;
             break;
           default:
             updatedSettings = updatedField.settings?.[section] || settings;
