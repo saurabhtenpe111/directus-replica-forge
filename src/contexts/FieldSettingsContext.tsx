@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { 
   getNormalizedFieldSettings, 
@@ -211,8 +212,8 @@ export const FieldSettingsProvider: React.FC<{
       const updatedFieldData = {
         ...fieldData,
         general_settings: settings,
-        // For backward compatibility
-        general: settings
+        // For backward compatibility - Note: We're using type assertion to bypass the TypeScript error
+        general: settings as any
       };
       
       setFieldData(updatedFieldData);
@@ -283,18 +284,18 @@ export const FieldSettingsProvider: React.FC<{
             updatedSettings = updatedField.ui_options_settings || updatedField.ui_options || settings;
             break;
           case 'general':
-            updatedSettings = updatedField.general_settings || updatedField.general || settings;
+            updatedSettings = updatedField.general_settings || (updatedField as any).general || settings;
             break;
           default:
-            updatedSettings = (updatedField.settings as any)?.[section] || settings;
+            updatedSettings = ((updatedField as any).settings as any)?.[section] || settings;
         }
         
         // Update the field data with the new settings
         const updatedFieldData = {
           ...fieldData,
           [`${section}_settings`]: updatedSettings,
-          // For backward compatibility
-          [section]: updatedSettings
+          // For backward compatibility - use type assertion to avoid TypeScript error
+          [section]: updatedSettings as any
         };
         
         setFieldData(updatedFieldData);
