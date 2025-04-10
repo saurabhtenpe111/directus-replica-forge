@@ -46,16 +46,17 @@ export function GeneralSettingsMiddleware({ children }: GeneralSettingsProps) {
     console.log('[GeneralSettingsMiddleware] Updating settings:', newSettings);
     
     // Ensure we have a keyFilter for text-type fields
+    let updatedSettings = { ...newSettings };
     if (['text', 'email', 'url', 'password'].includes(fieldType || '')) {
-      if (!newSettings.keyFilter) {
-        newSettings.keyFilter = 'none';
+      if (!updatedSettings.keyFilter) {
+        updatedSettings.keyFilter = 'none';
       }
     }
     
-    setSettings(newSettings);
+    setSettings(updatedSettings);
     
     if (updateGeneralSettings) {
-      updateGeneralSettings(newSettings)
+      updateGeneralSettings(updatedSettings)
         .then(() => {
           console.log('[GeneralSettingsMiddleware] Settings updated in context');
         })
@@ -89,19 +90,8 @@ export function GeneralSettingsMiddleware({ children }: GeneralSettingsProps) {
         }
       }
       
-      // Make sure placeholders and other UI properties are in the general settings
-      if (fieldData?.ui_options_settings) {
-        // Move relevant UI options to general settings
-        if (fieldData.ui_options_settings.placeholder && !finalSettings.placeholder) {
-          finalSettings.placeholder = fieldData.ui_options_settings.placeholder;
-        }
-        if (fieldData.ui_options_settings.help_text && !finalSettings.helpText) {
-          finalSettings.helpText = fieldData.ui_options_settings.help_text;
-        }
-        if (fieldData.ui_options_settings.hidden_in_forms !== undefined && finalSettings.hidden_in_forms === undefined) {
-          finalSettings.hidden_in_forms = fieldData.ui_options_settings.hidden_in_forms;
-        }
-      }
+      // Include field type in settings to help with conditional logic
+      finalSettings.fieldType = fieldType || undefined;
       
       // Use the fieldSettings context saveToDatabase function if available
       if (saveToDatabase) {
@@ -129,7 +119,7 @@ export function GeneralSettingsMiddleware({ children }: GeneralSettingsProps) {
     } finally {
       setIsSaving(false);
     }
-  }, [fieldId, collectionId, saveToDatabase, fieldType, fieldData]);
+  }, [fieldId, collectionId, saveToDatabase, fieldType]);
 
   return (
     <>

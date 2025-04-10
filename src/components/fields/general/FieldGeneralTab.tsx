@@ -32,12 +32,6 @@ export function FieldGeneralTab({
     console.log("[FieldGeneralTab] Initialized with fieldData:", fieldData);
     console.log("[FieldGeneralTab] Field ID:", fieldId);
     console.log("[FieldGeneralTab] Collection ID:", collectionId);
-    
-    // Check if UI options data needs to be migrated to general settings
-    if (fieldData?.ui_options_settings && !fieldData?.general_settings) {
-      console.log("[FieldGeneralTab] Found UI options but no general settings, might need migration:", 
-        fieldData.ui_options_settings);
-    }
   }, [fieldData, fieldId, collectionId]);
 
   return (
@@ -61,6 +55,13 @@ export function FieldGeneralTab({
                   finalSettings.keyFilter = 'none';
                 }
               }
+
+              // Set field type to help with conditional logic
+              finalSettings.fieldType = fieldType || undefined;
+
+              // Add other required properties
+              if (fieldName) finalSettings.fieldName = fieldName;
+              if (fieldApiId) finalSettings.fieldApiId = fieldApiId;
               
               console.log("[FieldGeneralTab] Saving settings:", finalSettings);
               await saveToDatabase(finalSettings);

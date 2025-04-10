@@ -363,20 +363,13 @@ export const createColumnUpdatePayload = (
       const generalSettings = { ...settings };
       
       // Add keyFilter if it's missing for text type fields
-      if (!generalSettings.keyFilter) {
+      if (!generalSettings.keyFilter && 
+          ['text', 'email', 'url', 'password'].includes(generalSettings.fieldType || '')) {
         generalSettings.keyFilter = 'none';
       }
       
-      const payload: Record<string, any> = { 
-        general_settings: generalSettings
-      };
-      
-      // Add description separately if it exists in general settings
-      if (settings.description !== undefined) {
-        payload.description = settings.description;
-      }
-      
-      return payload;
+      // Store only in general_settings column
+      return { general_settings: generalSettings };
       
     case 'helpText':
       // HelpText gets stored in general_settings

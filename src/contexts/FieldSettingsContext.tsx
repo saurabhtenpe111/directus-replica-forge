@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { 
   getNormalizedFieldSettings, 
@@ -234,7 +233,7 @@ export const FieldSettingsProvider: React.FC<{
     }
   }, [fieldData, onFieldUpdate]);
   
-  // Save a specific section to the database using the new column structure
+  // Save settings to database
   const saveToDatabase = useCallback(async (
     section: keyof FieldSettings, 
     settings: any
@@ -284,10 +283,10 @@ export const FieldSettingsProvider: React.FC<{
             updatedSettings = updatedField.ui_options_settings || updatedField.ui_options || settings;
             break;
           case 'general':
-            updatedSettings = updatedField.general_settings || (updatedField as any).general || settings;
+            updatedSettings = updatedField.general_settings || updatedField.general || settings;
             break;
           default:
-            updatedSettings = updatedField.settings?.[section] || settings;
+            updatedSettings = (updatedField.settings as any)?.[section] || settings;
         }
         
         // Update the field data with the new settings
