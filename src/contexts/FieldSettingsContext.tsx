@@ -12,7 +12,8 @@ import {
   ValidationSettings,
   AppearanceSettings, 
   AdvancedSettings,
-  UIOptions
+  UIOptions,
+  GeneralSettings
 } from '@/utils/fieldSettingsHelpers';
 import { toast } from '@/hooks/use-toast';
 import { updateField } from '@/services/CollectionService';
@@ -40,6 +41,7 @@ interface FieldSettingsContextType {
   updateAppearance: (settings: AppearanceSettings) => Promise<void>;
   updateAdvanced: (settings: AdvancedSettings) => Promise<void>;
   updateUIOptions: (options: UIOptions) => Promise<void>;
+  updateGeneralSettings: (settings: GeneralSettings) => Promise<void>;
   saveToDatabase: (section: keyof FieldSettings, settings: any) => Promise<void>;
 }
 
@@ -200,6 +202,37 @@ export const FieldSettingsProvider: React.FC<{
     }
   }, [fieldData, onFieldUpdate]);
   
+  // Add new method to update general settings locally
+  const updateGeneralSettings = useCallback(async (settings: GeneralSettings): Promise<void> => {
+    try {
+      console.log('[FieldSettingsContext] Updating general settings:', settings);
+      
+      // Update the field data with the new general settings
+      const updatedFieldData = {
+        ...fieldData,
+        general_settings: settings,
+        // For backward compatibility
+        general: settings
+      };
+      
+      setFieldData(updatedFieldData);
+      
+      if (onFieldUpdate) {
+        onFieldUpdate(updatedFieldData);
+      }
+      
+      return Promise.resolve();
+    } catch (error) {
+      console.error('[FieldSettingsContext] Error updating general settings:', error);
+      toast({
+        title: "Error updating general settings",
+        description: "There was an error updating the general settings.",
+        variant: "destructive"
+      });
+      return Promise.reject(error);
+    }
+  }, [fieldData, onFieldUpdate]);
+  
   // Save a specific section to the database using the new column structure
   const saveToDatabase = useCallback(async (
     section: keyof FieldSettings, 
@@ -304,6 +337,7 @@ export const FieldSettingsProvider: React.FC<{
     updateAppearance,
     updateAdvanced,
     updateUIOptions,
+    updateGeneralSettings,
     saveToDatabase,
   };
 
