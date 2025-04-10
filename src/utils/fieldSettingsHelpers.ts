@@ -1,4 +1,3 @@
-
 /**
  * Helper utilities for accessing and updating field settings consistently
  * across the application.
@@ -348,7 +347,7 @@ export function updateFieldSettings(
 export const createColumnUpdatePayload = (
   section: keyof FieldSettings,
   settings: any
-): Partial<FieldSettingsColumns & { settings?: any }> => {
+): Partial<Record<string, any>> => {
   // Map the section to the appropriate column
   switch (section) {
     case 'validation':
@@ -360,11 +359,25 @@ export const createColumnUpdatePayload = (
     case 'ui_options':
       return { ui_options_settings: settings };
     case 'general':
-      return { 
-        general_settings: settings,
-        // Also update the description if it exists in general settings
-        description: settings.description || undefined 
+      // Create a proper general settings payload
+      const generalSettings = { ...settings };
+      
+      // Add keyFilter if it's missing for text type fields
+      if (!generalSettings.keyFilter) {
+        generalSettings.keyFilter = 'none';
+      }
+      
+      const payload: Record<string, any> = { 
+        general_settings: generalSettings
       };
+      
+      // Add description separately if it exists in general settings
+      if (settings.description !== undefined) {
+        payload.description = settings.description;
+      }
+      
+      return payload;
+      
     case 'helpText':
       // HelpText gets stored in general_settings
       return { general_settings: { helpText: settings } };

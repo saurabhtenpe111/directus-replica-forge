@@ -32,6 +32,12 @@ export function FieldGeneralTab({
     console.log("[FieldGeneralTab] Initialized with fieldData:", fieldData);
     console.log("[FieldGeneralTab] Field ID:", fieldId);
     console.log("[FieldGeneralTab] Collection ID:", collectionId);
+    
+    // Check if UI options data needs to be migrated to general settings
+    if (fieldData?.ui_options_settings && !fieldData?.general_settings) {
+      console.log("[FieldGeneralTab] Found UI options but no general settings, might need migration:", 
+        fieldData.ui_options_settings);
+    }
   }, [fieldData, fieldId, collectionId]);
 
   return (
@@ -48,8 +54,16 @@ export function FieldGeneralTab({
           
           const handleSave = async () => {
             try {
-              console.log("[FieldGeneralTab] Saving settings:", settings);
-              await saveToDatabase(settings);
+              // Ensure keyFilter is set for text fields
+              let finalSettings = { ...settings };
+              if (['text', 'email', 'url', 'password'].includes(fieldType || '')) {
+                if (!finalSettings.keyFilter) {
+                  finalSettings.keyFilter = 'none';
+                }
+              }
+              
+              console.log("[FieldGeneralTab] Saving settings:", finalSettings);
+              await saveToDatabase(finalSettings);
               console.log("[FieldGeneralTab] Settings saved successfully");
             } catch (error) {
               console.error("[FieldGeneralTab] Error saving settings:", error);

@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { 
   getNormalizedFieldSettings, 
@@ -283,7 +284,7 @@ export const FieldSettingsProvider: React.FC<{
             updatedSettings = updatedField.ui_options_settings || updatedField.ui_options || settings;
             break;
           case 'general':
-            updatedSettings = updatedField.general_settings || updatedField.general || settings;
+            updatedSettings = updatedField.general_settings || (updatedField as any).general || settings;
             break;
           default:
             updatedSettings = updatedField.settings?.[section] || settings;

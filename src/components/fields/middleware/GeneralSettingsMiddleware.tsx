@@ -44,6 +44,14 @@ export function GeneralSettingsMiddleware({ children }: GeneralSettingsProps) {
   // Handle settings updates
   const handleUpdateSettings = useCallback((newSettings: GeneralSettings) => {
     console.log('[GeneralSettingsMiddleware] Updating settings:', newSettings);
+    
+    // Ensure we have a keyFilter for text-type fields
+    if (['text', 'email', 'url', 'password'].includes(fieldType || '')) {
+      if (!newSettings.keyFilter) {
+        newSettings.keyFilter = 'none';
+      }
+    }
+    
     setSettings(newSettings);
     
     if (updateGeneralSettings) {
@@ -55,7 +63,7 @@ export function GeneralSettingsMiddleware({ children }: GeneralSettingsProps) {
           console.error('[GeneralSettingsMiddleware] Error updating settings in context:', error);
         });
     }
-  }, [updateGeneralSettings]);
+  }, [updateGeneralSettings, fieldType]);
 
   // Save settings to database
   const handleSaveToDatabase = useCallback(async (settingsToSave: GeneralSettings) => {
@@ -73,14 +81,36 @@ export function GeneralSettingsMiddleware({ children }: GeneralSettingsProps) {
     try {
       console.log('[GeneralSettingsMiddleware] Saving settings to database:', settingsToSave);
       
+      // Ensure keyFilter is set for text fields
+      let finalSettings = { ...settingsToSave };
+      if (['text', 'email', 'url', 'password'].includes(fieldType || '')) {
+        if (!finalSettings.keyFilter) {
+          finalSettings.keyFilter = 'none';
+        }
+      }
+      
+      // Make sure placeholders and other UI properties are in the general settings
+      if (fieldData?.ui_options_settings) {
+        // Move relevant UI options to general settings
+        if (fieldData.ui_options_settings.placeholder && !finalSettings.placeholder) {
+          finalSettings.placeholder = fieldData.ui_options_settings.placeholder;
+        }
+        if (fieldData.ui_options_settings.help_text && !finalSettings.helpText) {
+          finalSettings.helpText = fieldData.ui_options_settings.help_text;
+        }
+        if (fieldData.ui_options_settings.hidden_in_forms !== undefined && finalSettings.hidden_in_forms === undefined) {
+          finalSettings.hidden_in_forms = fieldData.ui_options_settings.hidden_in_forms;
+        }
+      }
+      
       // Use the fieldSettings context saveToDatabase function if available
       if (saveToDatabase) {
-        await saveToDatabase('general', settingsToSave);
+        await saveToDatabase('general', finalSettings);
         console.log('[GeneralSettingsMiddleware] Settings saved using context method');
       } else {
         // Direct API call as fallback
         await updateField(collectionId, fieldId, {
-          general_settings: settingsToSave
+          general_settings: finalSettings
         });
         console.log('[GeneralSettingsMiddleware] Settings saved using direct API call');
       }
@@ -99,7 +129,7 @@ export function GeneralSettingsMiddleware({ children }: GeneralSettingsProps) {
     } finally {
       setIsSaving(false);
     }
-  }, [fieldId, collectionId, saveToDatabase]);
+  }, [fieldId, collectionId, saveToDatabase, fieldType, fieldData]);
 
   return (
     <>
