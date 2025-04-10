@@ -4,9 +4,11 @@ import { FieldSettingsMiddleware, useFieldSettingsDebug } from './middleware/Fie
 import { ValidationSettingsMiddleware } from './middleware/ValidationSettingsMiddleware';
 import { AppearanceSettingsMiddleware } from './middleware/AppearanceSettingsMiddleware';
 import { AdvancedSettingsMiddleware } from './middleware/AdvancedSettingsMiddleware';
+import { GeneralSettingsMiddleware } from './middleware/GeneralSettingsMiddleware';
 import { FieldValidationPanel } from './validation/FieldValidationPanel';
 import { FieldAppearancePanel } from './appearance/FieldAppearancePanel';
 import { FieldAdvancedPanel } from './FieldAdvancedPanel';
+import { FieldGeneralSettings } from './general/FieldGeneralSettings';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
@@ -31,7 +33,7 @@ export function FieldSettingsManager({
   fieldData,
   onUpdate
 }: FieldSettingsManagerProps) {
-  const [activeTab, setActiveTab] = React.useState('validation');
+  const [activeTab, setActiveTab] = React.useState('general');
   
   return (
     <FieldSettingsMiddleware
@@ -45,11 +47,46 @@ export function FieldSettingsManager({
       <FieldSettingsDebugger />
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="validation">Validation</TabsTrigger>
           <TabsTrigger value="appearance">Appearance</TabsTrigger>
           <TabsTrigger value="advanced">Advanced</TabsTrigger>
         </TabsList>
+        
+        <TabsContent value="general">
+          <GeneralSettingsMiddleware>
+            {({ settings, updateSettings, saveToDatabase, isSaving }) => (
+              <div className="space-y-6">
+                <FieldGeneralSettings
+                  fieldType={fieldType}
+                  initialData={settings}
+                  onUpdate={updateSettings}
+                  fieldName={fieldData?.name}
+                  fieldApiId={fieldData?.apiId}
+                />
+                <div className="flex justify-end space-x-2">
+                  <Button
+                    onClick={() => saveToDatabase(settings)}
+                    disabled={isSaving}
+                  >
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" />
+                        Save General Settings
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </GeneralSettingsMiddleware>
+        </TabsContent>
         
         <TabsContent value="validation">
           <ValidationSettingsMiddleware>
