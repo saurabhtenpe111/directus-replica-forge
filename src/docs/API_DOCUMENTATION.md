@@ -160,12 +160,11 @@ export const API_CONFIG = {
       "required": "boolean",
       "collectionId": "string",
       "sortOrder": "number",
-      "settings": {},
+      "generalSettings": {},
       "validationSettings": {},
       "appearanceSettings": {},
       "advancedSettings": {},
       "uiOptionsSettings": {},
-      "generalSettings": {},
       "createdAt": "string",
       "updatedAt": "string"
     }
@@ -184,11 +183,11 @@ export const API_CONFIG = {
     "type": "string",
     "description": "string",
     "required": "boolean",
+    "generalSettings": {},
     "validationSettings": {},
     "appearanceSettings": {},
     "advancedSettings": {},
-    "uiOptionsSettings": {},
-    "generalSettings": {}
+    "uiOptionsSettings": {}
   }
   ```
 - **Response**: Returns the created field object
@@ -207,7 +206,39 @@ export const API_CONFIG = {
 - **Parameters**:
   - `collectionId` - Collection ID (path parameter)
   - `fieldId` - Field ID (path parameter)
-- **Request Body**: Same as create field
+- **Request Body**: You can update just the specific settings section you want to modify
+  ```json
+  {
+    "name": "string", // optional
+    "apiId": "string", // optional
+    "description": "string", // optional
+    "required": "boolean", // optional
+    "generalSettings": {}, // optional
+    "validationSettings": {}, // optional
+    "appearanceSettings": {}, // optional
+    "advancedSettings": {}, // optional
+    "uiOptionsSettings": {} // optional
+  }
+  ```
+- **Response**: Updated field object
+
+### Update Specific Field Settings
+- **Endpoint**: `PATCH /collections/{collectionId}/fields/{fieldId}`
+- **Description**: Updates specific field settings sections
+- **Parameters**:
+  - `collectionId` - Collection ID (path parameter)
+  - `fieldId` - Field ID (path parameter)
+- **Request Body**: Include only the specific settings sections you want to update
+  ```json
+  {
+    "generalSettings": {}, // update only general settings
+    // OR
+    "validationSettings": {}, // update only validation settings
+    // OR 
+    "appearanceSettings": {}, // update only appearance settings
+    // etc.
+  }
+  ```
 - **Response**: Updated field object
 
 ### Delete Field
@@ -326,6 +357,122 @@ export const API_CONFIG = {
 - **Parameters**: `id` - Component ID (path parameter)
 - **Response**: 200 OK status code on success
 
+## Field Settings Database Structure
+
+The Spring Boot backend stores field settings in dedicated columns for each settings type. This allows for more efficient querying and updating of specific settings without modifying the entire field object.
+
+### Field Settings Columns
+
+Each field in the database has the following settings columns:
+
+1. **generalSettings**: Stores general field configuration
+   - Description
+   - Help text
+   - Placeholder
+   - Default values
+   - Field-specific properties (keyFilter, min/max values, etc.)
+   - Hidden in forms flag
+
+2. **validationSettings**: Stores validation rules
+   - Required flag
+   - Min/max length
+   - Pattern validation
+   - Custom validation rules
+
+3. **appearanceSettings**: Stores visual appearance configuration
+   - UI variant (standard, material, pill, etc.)
+   - Color schemes
+   - Theme configuration
+   - Custom CSS
+   - Text alignment and positioning
+
+4. **advancedSettings**: Stores advanced configuration
+   - Conditional display rules
+   - Data binding
+   - Masks and formatting
+   - Custom data attributes
+   - Accessibility options
+
+5. **uiOptionsSettings**: Stores UI-specific options
+   - Width configuration
+   - Display modes
+   - Character counting
+   - Special UI behaviors
+
+### API Adapter Functions
+
+The frontend uses adapter functions to correctly map settings to their respective columns:
+
+```typescript
+// Frontend to Backend adapters
+adaptFieldToApi(field) {
+  return {
+    id: field.id,
+    name: field.name,
+    apiId: field.apiId,
+    type: field.type,
+    description: field.description,
+    required: field.required || false,
+    collectionId: field.collection_id,
+    sortOrder: field.sort_order || 0,
+    
+    // Convert the settings objects to match Spring Boot's expected format
+    generalSettings: convertToSpringFormat(field.general_settings || {}),
+    validationSettings: convertToSpringFormat(field.validation_settings || {}),
+    appearanceSettings: convertToSpringFormat(field.appearance_settings || {}),
+    advancedSettings: convertToSpringFormat(field.advanced_settings || {}),
+    uiOptionsSettings: convertToSpringFormat(field.ui_options_settings || {})
+  };
+}
+
+// Backend to Frontend adapters
+adaptApiToField(apiField) {
+  return {
+    id: apiField.id,
+    name: apiField.name,
+    apiId: apiField.apiId,
+    type: apiField.type,
+    description: apiField.description,
+    required: apiField.required || false,
+    collection_id: apiField.collectionId,
+    sort_order: apiField.sortOrder || 0,
+    
+    // Settings from dedicated columns - store in both formats for compatibility
+    validation_settings: apiField.validationSettings || {},
+    appearance_settings: apiField.appearanceSettings || {},
+    advanced_settings: apiField.advancedSettings || {},
+    ui_options_settings: apiField.uiOptionsSettings || {},
+    general_settings: apiField.generalSettings || {}
+  };
+}
+```
+
+### Example Request to Update Field Settings
+
+When updating individual settings sections, you should only include the section you're modifying:
+
+```javascript
+// Update only validation settings
+await updateField(collectionId, fieldId, { 
+  validationSettings: {
+    required: true,
+    minLength: 5,
+    maxLength: 100
+  }
+});
+
+// Update only appearance settings
+await updateField(collectionId, fieldId, {
+  appearanceSettings: {
+    uiVariant: "standard",
+    colors: {
+      border: "#e2e8f0",
+      text: "#333333"
+    }
+  }
+});
+```
+
 ## Error Handling
 
 The API follows standard HTTP status codes for error responses:
@@ -353,56 +500,11 @@ Error responses have the following format:
 }
 ```
 
-## Data Adapters
-
-The frontend application uses adapter functions to convert between the frontend model format (which may use snake_case) and the Spring Boot backend format (which expects camelCase).
-
-These adapter functions are defined in `src/services/api/apiAdapter.ts`:
-
-```typescript
-// Frontend to Backend adapters
-adaptCollectionToApi(collection)
-adaptFieldToApi(field)
-adaptValidationSettings(settings)
-adaptAppearanceSettings(settings)
-adaptAdvancedSettings(settings)
-convertToSpringFormat(obj)
-
-// Backend to Frontend adapters
-adaptApiToCollection(apiCollection)
-adaptApiToField(apiField)
-adaptApiToContentItem(apiContentItem)
-```
-
-## API Client
-
-The API client is configured in `src/services/api/apiClient.ts` and handles:
-- Setting default headers
-- Adding authentication tokens to requests
-- Global error handling with toast notifications
-- Response formatting
-
-## Authentication Flow
-
-1. User submits login credentials
-2. Server validates and returns JWT token
-3. Token is stored in localStorage as 'authToken'
-4. Token is automatically included in subsequent API requests
-5. Expired tokens result in 401 responses and redirect to login page
-
-## Environment Configuration
-
-The application uses environment variables through Vite's import.meta.env:
-
-- `VITE_API_BASE_URL`: API base URL (default: http://localhost:8080/api)
-- `VITE_APP_NAME`: Application name (default: CMS)
-- `VITE_APP_VERSION`: Application version (default: 1.0.0)
-
 ## Spring Boot Setup Requirements
 
 1. The Spring Boot backend should implement all the endpoints described above
 2. JWT authentication should be configured
 3. CORS should be enabled for the frontend origin
 4. Response formats should match the expected structures
-5. Field settings should use camelCase property names
+5. Field settings should use camelCase property names in dedicated columns
 6. Validation errors should follow the standard Spring Boot format
