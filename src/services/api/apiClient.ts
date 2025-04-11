@@ -1,5 +1,5 @@
 
-import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig, AxiosResponse } from 'axios';
 import { API_CONFIG } from '@/config/api.config';
 import { toast } from '@/hooks/use-toast';
 
@@ -14,14 +14,11 @@ const apiClient: AxiosInstance = axios.create({
 
 // Request interceptor - could be used to add authentication tokens
 apiClient.interceptors.request.use(
-  (config: AxiosRequestConfig) => {
+  (config: InternalAxiosRequestConfig) => {
     // You can add auth token here when authentication is implemented
     // const token = localStorage.getItem('authToken');
     // if (token) {
-    //   config.headers = {
-    //     ...config.headers,
-    //     Authorization: `Bearer ${token}`,
-    //   };
+    //   config.headers.Authorization = `Bearer ${token}`;
     // }
     return config;
   },
