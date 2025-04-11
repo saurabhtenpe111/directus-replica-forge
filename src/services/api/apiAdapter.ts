@@ -70,6 +70,19 @@ export const convertToSpringFormat = (obj: Record<string, any>): Record<string, 
   return result;
 };
 
+// Add the missing adapter functions for different settings types
+export const adaptValidationSettings = (settings: ValidationSettings): any => {
+  return convertToSpringFormat(settings || {});
+};
+
+export const adaptAppearanceSettings = (settings: AppearanceSettings): any => {
+  return convertToSpringFormat(settings || {});
+};
+
+export const adaptAdvancedSettings = (settings: AdvancedSettings): any => {
+  return convertToSpringFormat(settings || {});
+};
+
 /**
  * Adapters for transforming Spring Boot responses to frontend models
  */
