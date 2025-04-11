@@ -7,19 +7,18 @@ import { toast } from '@/hooks/use-toast';
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_CONFIG.BASE_URL,
   timeout: API_CONFIG.TIMEOUT,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  headers: API_CONFIG.HEADERS
 });
 
 // Request interceptor - could be used to add authentication tokens
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // You can add auth token here when authentication is implemented
-    // const token = localStorage.getItem('authToken');
-    // if (token) {
-    //   config.headers.Authorization = `Bearer ${token}`;
-    // }
+    // Get JWT token from local storage
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    
     return config;
   },
   (error: AxiosError) => {
@@ -30,13 +29,23 @@ apiClient.interceptors.request.use(
 // Response interceptor for global error handling
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => {
-    return response;
+    // Spring Boot usually returns data directly or wrapped in a 'data' property
+    // This helps standardize the response format
+    return response.data?.data ? response.data : response;
   },
   (error: AxiosError) => {
     if (error.response) {
       // The request was made and the server responded with an error status
       const status = error.response.status;
-      const message = (error.response.data as any)?.message || 'An error occurred';
+      let message = '';
+      
+      // Spring Boot error responses typically have this structure
+      if (error.response.data) {
+        const data = error.response.data as any;
+        message = data.message || data.error || 'An error occurred';
+      } else {
+        message = 'Unknown error occurred';
+      }
 
       // Handle specific status codes
       if (status === 401) {
@@ -45,12 +54,20 @@ apiClient.interceptors.response.use(
           description: 'Your session has expired. Please log in again.',
           variant: 'destructive',
         });
-        // Here you could redirect to login page or clear tokens
-        // e.g. window.location.href = '/login';
+        
+        // Clear token and redirect to login
+        localStorage.removeItem('authToken');
+        window.location.href = '/login';
       } else if (status === 403) {
         toast({
           title: 'Access Denied',
           description: 'You don\'t have permission to perform this action.',
+          variant: 'destructive',
+        });
+      } else if (status === 400) {
+        toast({
+          title: 'Validation Error',
+          description: message,
           variant: 'destructive',
         });
       } else {

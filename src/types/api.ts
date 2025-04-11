@@ -3,14 +3,17 @@ export interface ApiResponse<T> {
   data: T;
   message?: string;
   status: string;
+  timestamp?: string;
 }
 
 export interface ApiErrorResponse {
   status: number;
   message: string;
+  error?: string;
   errors?: Record<string, string[]>;
   timestamp?: string;
   path?: string;
+  trace?: string;
 }
 
 export interface ApiPaginatedResponse<T> {
@@ -21,6 +24,8 @@ export interface ApiPaginatedResponse<T> {
   number: number;
   first: boolean;
   last: boolean;
+  empty?: boolean;
+  numberOfElements?: number;
 }
 
 export interface ApiCollectionResponse {
@@ -65,4 +70,32 @@ export interface ApiContentItemResponse {
   updatedAt: string;
   createdBy?: string;
   updatedBy?: string;
+  version?: number;
+}
+
+// Authentication related interfaces
+export interface ApiLoginRequest {
+  username: string;
+  password: string;
+}
+
+export interface ApiLoginResponse {
+  accessToken: string;
+  tokenType: string;
+  expiresIn: number;
+  refreshToken?: string;
+  userId: string;
+  roles: string[];
+}
+
+export interface ApiUserResponse {
+  id: string;
+  username: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  roles: string[];
+  enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
