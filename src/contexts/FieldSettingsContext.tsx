@@ -17,7 +17,8 @@ import {
   GeneralSettings
 } from '@/utils/fieldSettingsHelpers';
 import { toast } from '@/hooks/use-toast';
-import { updateField } from '@/services/CollectionService';
+import { updateField } from '@/services/api/CollectionApiService';
+import { adaptFieldToApi, adaptValidationSettings, adaptAppearanceSettings, adaptAdvancedSettings } from '@/services/api/apiAdapter';
 
 interface FieldSettingsContextType {
   // Field data
@@ -234,7 +235,7 @@ export const FieldSettingsProvider: React.FC<{
     }
   }, [fieldData, onFieldUpdate]);
   
-  // Save settings to database
+  // Save settings to database - updated to use the new API service
   const saveToDatabase = useCallback(async (
     section: keyof FieldSettings, 
     settings: any
@@ -256,12 +257,33 @@ export const FieldSettingsProvider: React.FC<{
       console.log('[FieldSettingsContext] Field ID:', fieldId);
       console.log('[FieldSettingsContext] Collection ID:', collectionId);
       
-      // Create the field data object using our helper for the new columns
-      const fieldUpdateData = createColumnUpdatePayload(section, settings);
+      // Create the field data object for the API
+      let fieldUpdateData: any = {};
+      
+      // Set the appropriate section data
+      switch(section) {
+        case 'validation':
+          fieldUpdateData.validation_settings = adaptValidationSettings(settings);
+          break;
+        case 'appearance':
+          fieldUpdateData.appearance_settings = adaptAppearanceSettings(settings);
+          break;
+        case 'advanced':
+          fieldUpdateData.advanced_settings = adaptAdvancedSettings(settings);
+          break;
+        case 'ui_options':
+          fieldUpdateData.ui_options_settings = settings;
+          break;
+        case 'general':
+          fieldUpdateData.general_settings = settings;
+          break;
+        default:
+          fieldUpdateData[section] = settings;
+      }
       
       console.log('[FieldSettingsContext] Update payload:', fieldUpdateData);
       
-      // Call the service to update the field in the database
+      // Call the API service to update the field
       const updatedField = await updateField(collectionId, fieldId, fieldUpdateData);
       
       console.log('[FieldSettingsContext] Field updated in database:', updatedField);
